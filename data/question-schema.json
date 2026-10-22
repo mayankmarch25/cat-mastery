@@ -1,0 +1,24 @@
+{
+  "id": "Q-CAT-2024-S1-001",
+  "section": "QA",
+  "type": "MCQ",
+  "topic": "Arithmetic",
+  "difficulty": "Medium",
+  "sourceType": "PYQ",
+  "sourceLabel": "CAT 2024 Slot 1",
+  "sourceUrl": "https://example.com/source",
+  "year": 2024,
+  "slot": 1,
+  "title": "Question title",
+  "stimulus": "",
+  "question": "Question text you have permission to republish",
+  "options": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "answer": 0,
+  "explanation": "Your own explanation",
+  "howToThink": "Short tactical approach"
+}

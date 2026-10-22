@@ -1,0 +1,26 @@
+[
+  {
+    "id": "Q-IMPORT-DEMO-001",
+    "section": "QA",
+    "type": "MCQ",
+    "topic": "Arithmetic",
+    "difficulty": "Medium",
+    "sourceType": "EXTERNAL",
+    "sourceLabel": "Demo imported question",
+    "sourceUrl": "https://example.com",
+    "year": null,
+    "slot": null,
+    "title": "Imported QA demo",
+    "stimulus": "",
+    "question": "If 40% of x is 72, x equals:",
+    "options": [
+      "160",
+      "170",
+      "180",
+      "190"
+    ],
+    "answer": 2,
+    "explanation": "0.4x=72, so x=180.",
+    "howToThink": "Convert the percentage directly into a multiplier."
+  }
+]

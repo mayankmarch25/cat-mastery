@@ -1,0 +1,64 @@
+{
+  "weightage_source": {
+    "file": "Mastering CAT Exam_ VARC, DILR, and Quant MCQs & Weightages_1792643096139.pdf",
+    "loaded_years": [
+      2020,
+      2021,
+      2022
+    ],
+    "note": "Counts are transcribed from the uploaded year-wise chapter-weightage tables as reported by the source."
+  },
+  "question_paper_catalog": [
+    {
+      "year": 2016,
+      "file": "CAT_2024_-_Past_10_Year_Question_Paper_2016.pdf"
+    },
+    {
+      "year": 2017,
+      "file": "CAT_2024_-_Past_10_Year_Question_Paper_2017.pdf"
+    },
+    {
+      "year": 2019,
+      "file": "CAT_2024_-_Past_10_Year_Question_Paper_2019.pdf"
+    },
+    {
+      "year": 2020,
+      "file": "CAT_2024_-_Past_10_Year_Question_Paper_2020_WTJQ1JR.pdf"
+    },
+    {
+      "year": 2021,
+      "file": "CAT_2024_-_Past_10_Year_Question_Paper_2021.pdf"
+    },
+    {
+      "year": 2022,
+      "file": "CAT_2022_-_Question_Paper_with_solutions.pdf"
+    },
+    {
+      "year": 2023,
+      "file": "CAT 2023 Official Question Paper with Solutions (Slot 1, 2 and 3).pdf"
+    },
+    {
+      "year": 2024,
+      "file": "CAT 2024 Official Question Paper with Solutions (Slot 1, 2 and 3).pdf"
+    },
+    {
+      "year": 2025,
+      "file": "CAT 2025 Official Question Paper with Solutions (Slot 1, 2 and 3).pdf"
+    }
+  ],
+  "practice_sources": [
+    {
+      "file": "CAT 2026 DILR Practice Questions with Solution, Download LRDI Questions for CAT PDF_1792643106929.pdf",
+      "coverage": "20 DILR sets / 100 questions per source"
+    },
+    {
+      "file": "CAT 2026 Quantitative Aptitude Questions with Answers PDF_1792643103870.pdf",
+      "coverage": "Chapter-wise QA practice"
+    },
+    {
+      "file": "CAT 2026 Exam's High Scoring Chapters and Topics ...pdf",
+      "coverage": "VARC, DILR, QA concept/practice material"
+    }
+  ],
+  "public_repo_note": "Do not bulk-copy third-party copyrighted question text into a public GitHub repository unless reuse rights allow it. Use source metadata, links, and your own/or licensed questions."
+}

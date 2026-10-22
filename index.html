@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAT Mastery — Daily Test & Analytics</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">📘</div><div><b>CAT Mastery</b><small>2027 Test Centre</small></div></div>
+    <div class="goal-card"><span>Target exam</span><b>CAT 2027</b><small>Daily practice · 5-year ready</small></div>
+    <nav>
+      <div class="nav-group">HOME</div>
+      <button data-view="dashboard" class="nav-item active">⌂ <span>Dashboard</span></button>
+      <div class="nav-group">PRACTISE</div>
+      <button data-view="daily" class="nav-item">▣ <span>Daily Test</span></button>
+      <button data-view="topics" class="nav-item">◎ <span>Topic Practice</span></button>
+      <button data-view="papers" class="nav-item">▤ <span>Past CAT Papers</span></button>
+      <button data-view="intelligence" class="nav-item">◉ <span>Exam Intelligence</span></button>
+      <div class="nav-group">ANALYSE</div>
+      <button data-view="analytics" class="nav-item">⌁ <span>Improvement</span></button>
+      <button data-view="errors" class="nav-item">⚠ <span>Error Log</span></button>
+      <button data-view="history" class="nav-item">◫ <span>Attempt History</span></button>
+      <div class="nav-group">PLAN</div>
+      <button data-view="weightage" class="nav-item">▦ <span>Exam Intelligence</span></button>
+      <div class="nav-group">BANK</div>
+      <button data-view="sources" class="nav-item">◈ <span>Sources & Import</span></button>
+    </nav>
+    <div class="sidebar-foot"><b>Mayank</b><span>Progress stays in this browser</span></div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div><b>CAT 2027</b> <span id="todayLabel"></span></div>
+      <div class="top-actions">
+        <button class="btn ghost" id="exportBtn">Export progress</button>
+        <label class="btn ghost file-btn">Import progress<input id="progressImport" type="file" accept=".json"></label>
+      </div>
+    </header>
+
+    <section id="view-dashboard" class="view active">
+      <div class="page-head">
+        <div><p class="eyebrow">YOUR CAT TRAINING SYSTEM</p><h1>Dashboard</h1><p>Daily practice, CAT PYQ tracking and long-term improvement.</p></div>
+        <button class="btn primary" data-go="daily">Start today's test</button>
+      </div>
+
+      <div class="hero-grid">
+        <div class="hero-card">
+          <div><span class="eyebrow">TODAY</span><h2 id="dashDate"></h2><p>VARC + DILR + QA · 15 questions · 60 minutes</p></div>
+          <div class="completion-ring" id="completionRing"><span id="completionPct">0%</span></div>
+        </div>
+        <div class="metric-grid">
+          <article><small>Current streak</small><strong id="mStreak">0</strong><span>days</span></article>
+          <article><small>Tests completed</small><strong id="mTests">0</strong><span>sections</span></article>
+          <article><small>Questions answered</small><strong id="mAnswered">0</strong><span>attempts</span></article>
+          <article><small>Overall accuracy</small><strong id="mAccuracy">0%</strong><span>attempted only</span></article>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><div><h3>Today's three sections</h3><p>Each section uses a deterministic daily selection. Completed questions enter your history.</p></div></div>
+        <div id="todaySectionCards" class="section-cards"></div>
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-title"><div><h3>30-day trend</h3><p>Accuracy by completed section</p></div></div>
+          <canvas id="trendCanvas" width="760" height="260"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><div><h3>What to work on</h3><p>Based on your topic-level accuracy</p></div></div>
+          <div id="focusList" class="focus-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-daily" class="view">
+      <div class="page-head">
+        <div><p class="eyebrow">DAILY TEST</p><h1 id="dailyDate"></h1><p>One VARC set, one DILR set and five QA questions.</p></div>
+      </div>
+      <div class="daily-layout">
+        <div>
+          <div id="dailyCards" class="panel"></div>
+          <div class="panel calendar-panel">
+            <div class="panel-title"><div><h3>Calendar</h3><p>Click a date to review or attempt that day's test.</p></div><div class="calendar-actions"><button class="icon-btn" id="calPrev">←</button><b id="calMonth"></b><button class="icon-btn" id="calNext">→</button></div></div>
+            <div id="calendar" class="calendar"></div>
+          </div>
+        </div>
+        <aside class="panel compact-panel">
+          <h3>Daily rules</h3>
+          <ul class="clean-list">
+            <li><b>No silent repeats.</b> Revisions are labelled.</li>
+            <li><b>Source labels.</b> PYQ / reconstructed / original practice.</li>
+            <li><b>CAT marking.</b> +3 correct, −1 wrong MCQ, 0 skipped/TITA wrong.</li>
+            <li><b>Adaptive focus.</b> Weak topics appear more often in practice mode.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-topics" class="view">
+      <div class="page-head"><div><p class="eyebrow">TOPIC PRACTICE</p><h1>Practice by weakness</h1><p>Choose section and topic. The app prioritises questions you have not solved.</p></div></div>
+      <div class="panel">
+        <div class="filters">
+          <select id="topicSection"><option>QA</option><option>VARC</option><option>DILR</option></select>
+          <select id="topicName"></select>
+          <select id="topicDifficulty"><option value="all">All difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option></select>
+          <button class="btn primary" id="topicStart">Start 5-question drill</button>
+        </div>
+        <div id="topicSummary" class="topic-summary"></div>
+      </div>
+    </section>
+
+    <section id="view-weightage" class="view">
+      <div class="page-head">
+        <div><p class="eyebrow">EXAM INTELLIGENCE</p><h1>Topic Weightage & Question Hub</h1><p>One place to see what gets asked, how often it appears, and jump straight into practice.</p></div>
+      </div>
+      <div class="panel">
+        <div class="filters">
+          <select id="examSelect"><option value="CAT">CAT</option><option value="XAT">XAT</option><option value="SNAP">SNAP</option><option value="NMAT">NMAT</option><option value="CMAT">CMAT</option></select>
+          <select id="weightSection"><option value="ALL">All sections</option><option value="VARC">VARC</option><option value="DILR">DILR</option><option value="QA">QA</option></select>
+          <select id="weightYear"><option value="ALL">2020–2022 combined</option><option value="2022">2022</option><option value="2021">2021</option><option value="2020">2020</option></select>
+          <input id="weightSearch" class="text-filter" placeholder="Search topic…">
+        </div>
+        <div id="examDataNotice" class="notice small-notice"></div>
+      </div>
+      <div class="weightage-grid">
+        <div class="panel">
+          <div class="panel-title"><div><h3>Topic weightage</h3><p id="weightSubtitle">Question counts from uploaded year-wise analysis.</p></div></div>
+          <div id="weightageTable"></div>
+        </div>
+        <aside class="panel compact-panel">
+          <h3>Priority map</h3>
+          <p class="muted">Higher historical frequency rises to the top. Use this as a study-priority signal, not a guarantee of future CAT composition.</p>
+          <div id="priorityList" class="focus-list"></div>
+        </aside>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><div><h3>Questions for selected topic</h3><p>Practice from your loaded question bank. Imported PYQs will appear here automatically when their topic tags match.</p></div></div>
+        <div id="weightQuestionHub"></div>
+      </div>
+      <div class="notice"><b>Source note:</b> CAT 2020–2022 counts in this page come from the uploaded Careers360 “Year-Wise Chapter Weightage with Practice Questions” PDF. Other exams are left unpopulated until a source is added, so the dashboard does not invent weightage data.</div>
+    </section>
+
+    <section id="view-papers" class="view">
+      <div class="page-head"><div><p class="eyebrow">QUESTION BANK</p><h1>Past CAT papers 2012–2025</h1><p>2017–2025 can be tagged as verified PYQ when sourced from reliable candidate-response archives. Older years should be labelled reconstructed unless independently verified.</p></div></div>
+      <div class="panel">
+        <div id="paperYears" class="year-grid"></div>
+      </div>
+      <div class="notice">
+        <b>Copyright-safe design:</b> this starter package does not bulk-copy coaching-site question banks. Add questions you are entitled to republish, or store a source URL and open the original resource.
+      </div>
+    </section>
+
+    
+    <section id="view-intelligence" class="view">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">EXAM INTELLIGENCE</p>
+          <h1>Topic Weightage & Question Hub</h1>
+          <p>See what CAT has tested, how often it appears, what you have practised, and where you should spend time next.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="filters intelligence-filters">
+          <select id="intelExam">
+            <option value="CAT">CAT</option>
+            <option value="XAT">XAT</option>
+            <option value="SNAP">SNAP</option>
+            <option value="NMAT">NMAT</option>
+            <option value="CMAT">CMAT</option>
+          </select>
+          <select id="intelSection">
+            <option value="QA">QA</option>
+            <option value="DILR">DILR</option>
+            <option value="VARC">VARC</option>
+          </select>
+          <select id="intelYear">
+            <option value="all">2020–2022 combined</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+          </select>
+          <select id="intelSort">
+            <option value="frequency">Sort: historical frequency</option>
+            <option value="priority">Sort: study priority</option>
+            <option value="accuracy">Sort: lowest accuracy</option>
+          </select>
+        </div>
+        <div id="intelNotice" class="notice intel-notice"></div>
+      </div>
+
+      <div class="intelligence-kpis">
+        <article class="panel intel-kpi"><small>Topics tracked</small><strong id="intelTopics">0</strong><span>in current filter</span></article>
+        <article class="panel intel-kpi"><small>Historical questions</small><strong id="intelQuestions">0</strong><span>across selected years</span></article>
+        <article class="panel intel-kpi"><small>Your weakest tracked topic</small><strong id="intelWeakest">—</strong><span id="intelWeakestMeta">No attempts yet</span></article>
+        <article class="panel intel-kpi"><small>Highest-priority topic</small><strong id="intelPriority">—</strong><span>frequency × weakness</span></article>
+      </div>
+
+      <div class="two-col intelligence-layout">
+        <div class="panel">
+          <div class="panel-title">
+            <div><h3>Topic map</h3><p>Historical frequency compared with your own performance.</p></div>
+          </div>
+          <div id="intelTable"></div>
+        </div>
+        <div>
+          <div class="panel">
+            <div class="panel-title"><div><h3>Historical frequency</h3><p>Selected section and year range</p></div></div>
+            <canvas id="weightageCanvas" width="650" height="360"></canvas>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><div><h3>How to use this page</h3></div></div>
+            <div class="rule-stack">
+              <div><b>High weightage + low accuracy</b><span>Do this first.</span></div>
+              <div><b>High weightage + high accuracy</b><span>Maintain with revision.</span></div>
+              <div><b>Low weightage + low accuracy</b><span>Fix after the high-return topics.</span></div>
+              <div><b>Low weightage + high accuracy</b><span>Lowest immediate priority.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <div><h3>Question & source library</h3><p>One place to see the CAT material already available to this project.</p></div>
+        </div>
+        <div id="sourceLibraryTable"></div>
+      </div>
+    </section>
+
+    <section id="view-analytics" class="view">
+      <div class="page-head"><div><p class="eyebrow">IMPROVEMENT</p><h1>Your performance over time</h1><p>Accuracy, speed, section performance and topic-level weaknesses.</p></div></div>
+      <div class="metric-grid analytics-metrics">
+        <article><small>Last 10 accuracy</small><strong id="aLast10">0%</strong><span id="aVsPrev">No baseline yet</span></article>
+        <article><small>VARC</small><strong id="aVarc">0%</strong><span>accuracy</span></article>
+        <article><small>DILR</small><strong id="aDilr">0%</strong><span>accuracy</span></article>
+        <article><small>QA</small><strong id="aQa">0%</strong><span>accuracy</span></article>
+      </div>
+      <div class="two-col">
+        <div class="panel"><div class="panel-title"><div><h3>Accuracy trend</h3><p>Each dot = one submitted section</p></div></div><canvas id="analyticsCanvas" width="760" height="300"></canvas></div>
+        <div class="panel"><div class="panel-title"><div><h3>Topic report</h3><p>Weak topics rise to the top</p></div></div><div id="topicReport"></div></div>
+      </div>
+    </section>
+
+    <section id="view-errors" class="view">
+      <div class="page-head"><div><p class="eyebrow">ERROR LOG</p><h1>Questions you should revisit</h1><p>Wrong and skipped questions remain here until you clear them in revision.</p></div></div>
+      <div class="panel"><div id="errorTable"></div></div>
+    </section>
+
+    <section id="view-history" class="view">
+      <div class="page-head"><div><p class="eyebrow">ATTEMPT HISTORY</p><h1>Every submitted section</h1><p>Your score, accuracy, time and source mix.</p></div></div>
+      <div class="panel"><div id="historyTable"></div></div>
+    </section>
+
+    <section id="view-sources" class="view">
+      <div class="page-head"><div><p class="eyebrow">QUESTION BANK ADMIN</p><h1>Sources & question import</h1><p>Keep provenance with every question.</p></div></div>
+      <div class="two-col">
+        <div class="panel">
+          <h3>Recommended source catalog</h3>
+          <div class="source-card"><b>Official / candidate response-sheet CAT PYQs</b><span>Preferred for verified 2017–2025 questions.</span></div>
+          <div class="source-card"><b>2IIM CAT question-paper archive</b><span>Useful for cross-checking year, slot and section; link back to source.</span></div>
+          <div class="source-card"><b>Cracku free CAT resources</b><span>Useful for practice and benchmarking; do not bulk-republish proprietary content without permission.</span></div>
+          <div class="source-card"><b>Older CAT 2012–2016 archives</b><span>Tag as reconstructed/memory-based unless independently verified.</span></div>
+          <div class="source-card"><b>Original CAT-style practice</b><span>Safest way to build a large 5-year no-repeat bank.</span></div>
+        </div>
+        <div class="panel">
+          <h3>Import question bank</h3>
+          <p class="muted">Import a JSON file matching <code>data/question-schema.json</code>. Imported questions are saved in this browser.</p>
+          <label class="btn primary file-btn">Choose JSON<input id="bankImport" type="file" accept=".json"></label>
+          <button class="btn ghost" id="clearImported">Clear imported bank</button>
+          <div id="importStatus" class="import-status"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Question schema</h3>
+        <pre id="schemaPreview"></pre>
+      </div>
+    </section>
+
+    <section id="view-test" class="view">
+      <div class="test-wrap">
+        <div class="test-head">
+          <div><p class="eyebrow" id="testMeta"></p><h1 id="testName"></h1><p id="testSourceLine"></p></div>
+          <div class="timer" id="timer">20:00</div>
+        </div>
+        <div class="progress"><span id="testProgress"></span></div>
+        <div id="stimulus"></div>
+        <div id="questionArea"></div>
+        <div class="test-actions"><button class="btn ghost" id="testExit">← Exit</button><button class="btn primary" id="testSubmit">Submit section</button></div>
+      </div>
+    </section>
+
+    <section id="view-result" class="view">
+      <div class="result-head">
+        <div><p class="eyebrow">SECTION RESULT</p><h1 id="resultTitle"></h1><p id="resultSubtitle"></p></div>
+        <div class="top-actions"><button class="btn ghost" id="printResult">Print / save PDF</button><button class="btn ghost" id="retryTest">Attempt again</button></div>
+      </div>
+      <div class="result-score panel">
+        <div class="score-main"><span class="eyebrow">YOUR SCORE</span><div><strong id="scoreValue">0</strong><span id="scoreMax">/ 15 marks</span></div><div class="scorebar"><span id="scoreBar"></span></div><p id="scorePct"></p></div>
+        <div class="score-cells">
+          <article class="good"><strong id="rCorrect">0</strong><span>Correct</span></article>
+          <article class="bad"><strong id="rWrong">0</strong><span>Wrong</span></article>
+          <article><strong id="rSkipped">0</strong><span>Skipped</span></article>
+          <article><strong id="rAccuracy">0%</strong><span>Accuracy</span></article>
+          <article><strong id="rTime">0 min</strong><span>Time used</span></article>
+          <article><strong id="rVsAvg">—</strong><span>vs your recent avg</span></article>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-title"><div><h3>Question review</h3><p>Your answer, correct answer, explanation and thinking approach.</p></div></div><div id="reviewArea"></div></div>
+    </section>
+  </main>
+</div>
+<script src="data/questions.js"></script>
+<script src="data/weightage.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

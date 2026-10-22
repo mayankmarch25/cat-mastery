@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAT Mastery — Daily Test & Analytics</title>
   <link rel="stylesheet" href="assets/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css">
 </head>
 <body>
 <div class="app">
@@ -18,6 +22,7 @@
       <button data-view="daily" class="nav-item">▣ <span>Daily Test</span></button>
       <button data-view="topics" class="nav-item">◎ <span>Topic Practice</span></button>
       <button data-view="random" class="nav-item">⚡ <span>Random Test</span></button>
+      <button data-view="quant" class="nav-item">∑ <span>Quant Track</span></button>
       <button data-view="geometry" class="nav-item">△ <span>Learn Geometry</span></button>
       <button data-view="papers" class="nav-item">▤ <span>Past CAT Papers</span></button>
       <button data-view="intelligence" class="nav-item">◉ <span>Exam Intelligence</span></button>
@@ -43,36 +48,46 @@
     </header>
 
     <section id="view-dashboard" class="view active">
-      <div class="page-head">
-        <div><p class="eyebrow">YOUR CAT TRAINING SYSTEM</p><h1>Dashboard</h1><p>Daily practice, CAT PYQ tracking and long-term improvement.</p></div>
-        <button class="btn primary" data-go="daily">Start today's test</button>
+      <div class="dash-head">
+        <div>
+          <h1>Quantitative aptitude, worked block by block</h1>
+          <p id="dashDate"></p>
+        </div>
+        <div class="dash-actions">
+          <button class="btn ghost" data-go="quant">Open the track</button>
+          <button class="btn primary" data-go="daily">Start today's test</button>
+        </div>
       </div>
 
-      <div class="hero-grid">
-        <div class="hero-card">
-          <div><span class="eyebrow">TODAY</span><h2 id="dashDate"></h2><p>VARC + DILR + QA · 15 questions · 60 minutes</p></div>
-          <div class="completion-ring" id="completionRing"><span id="completionPct">0%</span></div>
+      <section class="syllabus-strip panel-flat">
+        <div class="strip-head">
+          <h2>Where you are in the syllabus</h2>
+          <p id="syllabusSummary"></p>
         </div>
-        <div class="metric-grid">
-          <article><small>Current streak</small><strong id="mStreak">0</strong><span>days</span></article>
-          <article><small>Tests completed</small><strong id="mTests">0</strong><span>sections</span></article>
-          <article><small>Questions answered</small><strong id="mAnswered">0</strong><span>attempts</span></article>
-          <article><small>Overall accuracy</small><strong id="mAccuracy">0%</strong><span>attempted only</span></article>
-        </div>
-      </div>
+        <div id="syllabusBar" class="syllabus-bar"></div>
+        <div id="syllabusLegend" class="syllabus-legend"></div>
+      </section>
+
+      <section class="readings">
+        <article><span>Current streak</span><strong id="mStreak">0</strong><em>consecutive days</em></article>
+        <article><span>Sections completed</span><strong id="mTests">0</strong><em>timed attempts</em></article>
+        <article><span>Questions answered</span><strong id="mAnswered">0</strong><em>across all modes</em></article>
+        <article><span>Accuracy</span><strong id="mAccuracy">0%</strong><em>of questions attempted</em></article>
+        <article><span>Today</span><strong id="completionPct">0%</strong><em>of today's three sections</em></article>
+      </section>
 
       <div class="panel">
-        <div class="panel-title"><div><h3>Today's three sections</h3><p>Each section uses a deterministic daily selection. Completed questions enter your history.</p></div></div>
+        <div class="panel-title"><div><h3>Today's three sections</h3><p>Each day advances through the bank, so questions do not repeat until the pool is exhausted.</p></div></div>
         <div id="todaySectionCards" class="section-cards"></div>
       </div>
 
       <div class="two-col">
         <div class="panel">
-          <div class="panel-title"><div><h3>30-day trend</h3><p>Accuracy by completed section</p></div></div>
+          <div class="panel-title"><div><h3>Accuracy over the last 30 attempts</h3><p>One point per completed section</p></div></div>
           <canvas id="trendCanvas" width="760" height="260"></canvas>
         </div>
         <div class="panel">
-          <div class="panel-title"><div><h3>What to work on</h3><p>Based on your topic-level accuracy</p></div></div>
+          <div class="panel-title"><div><h3>Work on these next</h3><p>Your weakest chapters by accuracy</p></div></div>
           <div id="focusList" class="focus-list"></div>
         </div>
       </div>
@@ -157,7 +172,23 @@
           <label>Time<select id="randomTime"><option value="auto">Auto CAT pace</option><option value="30">30 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></select></label>
         </div><button class="btn primary" id="randomStart">Generate random test</button><div id="randomSummary" class="import-status"></div></div>
         <div class="panel"><h3>Current bank</h3><div id="bankBreakdown" class="bank-breakdown"></div><p class="muted">Random tests avoid duplicates within the same test. PYQ and practice sources remain visibly labelled.</p></div>
+        <div class="panel" id="integrityPanel"></div>
       </div>
+    </section>
+
+    <section id="view-quant" class="view">
+      <div class="page-head">
+        <div><h1>Quant Track</h1><p id="quantBookLine"></p></div>
+        <div class="dash-actions">
+          <select id="quantLod" class="text-filter">
+            <option value="1">Level of Difficulty I</option>
+            <option value="2" selected>Level of Difficulty II</option>
+            <option value="3">Level of Difficulty III</option>
+          </select>
+        </div>
+      </div>
+      <div class="notice" id="quantNotice"></div>
+      <div id="quantBlocks" class="block-stack"></div>
     </section>
 
     <section id="view-geometry" class="view">
@@ -177,6 +208,8 @@
           <button class="btn primary" id="paperStart">Start selected paper</button>
         </div>
         <div id="paperSelectionSummary" class="topic-summary"></div>
+        <div class="notice integrity-note"><b>What is in this bank:</b> only extracted records that are answerable from what was captured. Items whose passage, caselet or options did not survive extraction, and items where the stored answer index conflicted with the published key, have been removed rather than shown. The removed records are kept in <code>data/pyq-quarantine.json</code> with a reason against each one. Coverage below reflects what is actually usable, not what the source PDFs were titled.</div>
+        <div class="notice"><b>Before you publish:</b> CAT papers are the intellectual property of the IIMs. Keep this repository private, or set <code>includePYQ: false</code> in <code>data/config.js</code> to ship the site with original practice only.</div>
       </div>
       <div class="panel">
         <div class="panel-title"><div><h3>2016–2025 source coverage</h3><p>Ready means scored questions were extracted from an answer-bearing PDF. Other statuses are shown honestly.</p></div></div>
@@ -348,6 +381,9 @@
     </section>
   </main>
 </div>
+<script src="data/config.js"></script>
+<script src="data/integrity.js"></script>
+<script src="data/quant-track.js"></script>
 <script src="data/questions.js"></script>
 <script src="data/practice-bank.js"></script>
 <script src="data/pyq-bank.js"></script>

@@ -1,0 +1,62 @@
+{
+ "generatedOn": "build",
+ "totals": {
+  "shipped": 3079,
+  "pyq": 343,
+  "original": 2238,
+  "legacyUnverified": 498,
+  "uniqueStems": 2766,
+  "verifiedAnswers": 2581,
+  "quarantined": 306
+ },
+ "bySection": {
+  "QA": 2511,
+  "VARC": 186,
+  "DILR": 382
+ },
+ "sectionUnique": {
+  "QA": 2511,
+  "DILR": 161,
+  "VARC": 96
+ },
+ "pyqByYear": {
+  "2017": 71,
+  "2019": 68,
+  "2020": 23,
+  "2021": 71,
+  "2022": 110
+ },
+ "quarantineReasons": {
+  "rc_passage_missing": 59,
+  "answer_key_conflict": 152,
+  "mcq_missing_options": 3,
+  "dilr_caselet_missing": 80,
+  "ocr_garbled_options": 12
+ },
+ "explanationStatus": {
+  "KEY_ONLY": 235,
+  "FULL": 2844
+ },
+ "legacyDuplicatesRemoved": 567,
+ "droppedByValidation": {
+  "pyq:answertext_mismatch": 6,
+  "pyq:duplicate_options": 1,
+  "pyq_internal_duplicate": 27,
+  "cross_bank_duplicate": 252
+ },
+ "quant": {
+  "qaTagged": 2510,
+  "qaUntagged": 1,
+  "chaptersWithQuestions": 23,
+  "chaptersTotal": 23,
+  "byLod": {
+   "2": 1087,
+   "1": 1049,
+   "3": 375
+  }
+ },
+ "distinctStimuli": {
+  "VARC": 93,
+  "DILR": 128
+ }
+}

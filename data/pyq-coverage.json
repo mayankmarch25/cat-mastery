@@ -1,0 +1,222 @@
+{
+  "total_scored_pyq": 683,
+  "coverage": [
+    {
+      "year": 2017,
+      "slot": 1,
+      "section": "QA",
+      "questions": 33
+    },
+    {
+      "year": 2017,
+      "slot": 1,
+      "section": "VARC",
+      "questions": 6
+    },
+    {
+      "year": 2017,
+      "slot": 2,
+      "section": "QA",
+      "questions": 34
+    },
+    {
+      "year": 2017,
+      "slot": 2,
+      "section": "VARC",
+      "questions": 6
+    },
+    {
+      "year": 2019,
+      "slot": 1,
+      "section": "DILR",
+      "questions": 4
+    },
+    {
+      "year": 2019,
+      "slot": 1,
+      "section": "QA",
+      "questions": 32
+    },
+    {
+      "year": 2019,
+      "slot": 1,
+      "section": "VARC",
+      "questions": 5
+    },
+    {
+      "year": 2019,
+      "slot": 2,
+      "section": "DILR",
+      "questions": 4
+    },
+    {
+      "year": 2019,
+      "slot": 2,
+      "section": "QA",
+      "questions": 33
+    },
+    {
+      "year": 2020,
+      "slot": 1,
+      "section": "DILR",
+      "questions": 20
+    },
+    {
+      "year": 2020,
+      "slot": 1,
+      "section": "QA",
+      "questions": 26
+    },
+    {
+      "year": 2020,
+      "slot": 1,
+      "section": "VARC",
+      "questions": 20
+    },
+    {
+      "year": 2020,
+      "slot": 2,
+      "section": "QA",
+      "questions": 20
+    },
+    {
+      "year": 2020,
+      "slot": 2,
+      "section": "VARC",
+      "questions": 22
+    },
+    {
+      "year": 2020,
+      "slot": 3,
+      "section": "DILR",
+      "questions": 2
+    },
+    {
+      "year": 2020,
+      "slot": 3,
+      "section": "QA",
+      "questions": 25
+    },
+    {
+      "year": 2020,
+      "slot": 3,
+      "section": "VARC",
+      "questions": 26
+    },
+    {
+      "year": 2021,
+      "slot": 1,
+      "section": "DILR",
+      "questions": 20
+    },
+    {
+      "year": 2021,
+      "slot": 1,
+      "section": "QA",
+      "questions": 22
+    },
+    {
+      "year": 2021,
+      "slot": 1,
+      "section": "VARC",
+      "questions": 17
+    },
+    {
+      "year": 2021,
+      "slot": 2,
+      "section": "DILR",
+      "questions": 20
+    },
+    {
+      "year": 2021,
+      "slot": 2,
+      "section": "QA",
+      "questions": 22
+    },
+    {
+      "year": 2021,
+      "slot": 2,
+      "section": "VARC",
+      "questions": 19
+    },
+    {
+      "year": 2021,
+      "slot": 3,
+      "section": "DILR",
+      "questions": 20
+    },
+    {
+      "year": 2021,
+      "slot": 3,
+      "section": "QA",
+      "questions": 22
+    },
+    {
+      "year": 2021,
+      "slot": 3,
+      "section": "VARC",
+      "questions": 19
+    },
+    {
+      "year": 2022,
+      "slot": 1,
+      "section": "DILR",
+      "questions": 20
+    },
+    {
+      "year": 2022,
+      "slot": 1,
+      "section": "QA",
+      "questions": 22
+    },
+    {
+      "year": 2022,
+      "slot": 1,
+      "section": "VARC",
+      "questions": 21
+    },
+    {
+      "year": 2022,
+      "slot": 2,
+      "section": "DILR",
+      "questions": 20
+    },
+    {
+      "year": 2022,
+      "slot": 2,
+      "section": "QA",
+      "questions": 20
+    },
+    {
+      "year": 2022,
+      "slot": 2,
+      "section": "VARC",
+      "questions": 23
+    },
+    {
+      "year": 2022,
+      "slot": 3,
+      "section": "DILR",
+      "questions": 20
+    },
+    {
+      "year": 2022,
+      "slot": 3,
+      "section": "QA",
+      "questions": 17
+    },
+    {
+      "year": 2022,
+      "slot": 3,
+      "section": "VARC",
+      "questions": 21
+    }
+  ],
+  "limitations": {
+    "2016": "source uploaded but answer key not reliably extractable from parsed text",
+    "2018": "no standalone full paper with answer-bearing text supplied",
+    "2023": "uploaded PDF is primarily an index/download-link ebook",
+    "2024": "uploaded PDF is primarily an index/download-link ebook",
+    "2025": "full question text supplied but answers/solutions are not consistently embedded in machine-readable form"
+  }
+}

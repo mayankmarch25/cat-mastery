@@ -17,6 +17,8 @@
       <div class="nav-group">PRACTISE</div>
       <button data-view="daily" class="nav-item">▣ <span>Daily Test</span></button>
       <button data-view="topics" class="nav-item">◎ <span>Topic Practice</span></button>
+      <button data-view="random" class="nav-item">⚡ <span>Random Test</span></button>
+      <button data-view="geometry" class="nav-item">△ <span>Learn Geometry</span></button>
       <button data-view="papers" class="nav-item">▤ <span>Past CAT Papers</span></button>
       <button data-view="intelligence" class="nav-item">◉ <span>Exam Intelligence</span></button>
       <div class="nav-group">ANALYSE</div>
@@ -144,13 +146,45 @@
       <div class="notice"><b>Source note:</b> CAT 2020–2022 counts in this page come from the uploaded Careers360 “Year-Wise Chapter Weightage with Practice Questions” PDF. Other exams are left unpopulated until a source is added, so the dashboard does not invent weightage data.</div>
     </section>
 
+    
+    <section id="view-random" class="view">
+      <div class="page-head"><div><p class="eyebrow">CUSTOM TEST BUILDER</p><h1>Random Test</h1><p>Build a fresh test from the full bank. Choose size, section mix and source.</p></div></div>
+      <div class="two-col">
+        <div class="panel"><h3>Build your test</h3><div class="builder-grid">
+          <label>Questions<select id="randomCount"><option>25</option><option>50</option><option>75</option><option>100</option></select></label>
+          <label>Section<select id="randomSection"><option value="ALL">All sections</option><option>QA</option><option>DILR</option><option>VARC</option></select></label>
+          <label>Source<select id="randomSource"><option value="ALL">PYQ + Practice</option><option value="PYQ">Real CAT PYQ only</option><option value="ORIGINAL">CAT-level Practice only</option></select></label>
+          <label>Time<select id="randomTime"><option value="auto">Auto CAT pace</option><option value="30">30 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></select></label>
+        </div><button class="btn primary" id="randomStart">Generate random test</button><div id="randomSummary" class="import-status"></div></div>
+        <div class="panel"><h3>Current bank</h3><div id="bankBreakdown" class="bank-breakdown"></div><p class="muted">Random tests avoid duplicates within the same test. PYQ and practice sources remain visibly labelled.</p></div>
+      </div>
+    </section>
+
+    <section id="view-geometry" class="view">
+      <div class="page-head"><div><p class="eyebrow">LEARN QA</p><h1>Geometry Learning Path</h1><p>Concepts, formulas, shortcuts and immediate practice based on the geometry notes you uploaded.</p></div><button class="btn primary" id="geometryPractice">Practice Geometry</button></div>
+      <div class="geometry-hero panel"><div><strong id="geometryProgress">0%</strong><span>lesson progress</span></div><div><b>18 modules</b><p>Angles → triangles → centres → quadrilaterals → circles → tangents.</p></div></div>
+      <div id="geometryModules" class="lesson-grid"></div>
+    </section>
+
     <section id="view-papers" class="view">
-      <div class="page-head"><div><p class="eyebrow">QUESTION BANK</p><h1>Past CAT papers 2012–2025</h1><p>2017–2025 can be tagged as verified PYQ when sourced from reliable candidate-response archives. Older years should be labelled reconstructed unless independently verified.</p></div></div>
+      <div class="page-head"><div><p class="eyebrow">PAST CAT TEST CENTER</p><h1>Solve CAT by year, slot & section</h1><p>Choose a real extracted PYQ set, attempt it under time, then review answers and solutions after submission.</p></div></div>
       <div class="panel">
+        <div class="filters paper-filters">
+          <select id="paperYear"></select>
+          <select id="paperSlot"></select>
+          <select id="paperSection"><option value="VARC">VARC</option><option value="DILR">DILR</option><option value="QA">QA</option></select>
+          <select id="paperSize"><option value="full">Full extracted section</option><option value="10">10 questions</option><option value="5">5 questions</option></select>
+          <button class="btn primary" id="paperStart">Start selected paper</button>
+        </div>
+        <div id="paperSelectionSummary" class="topic-summary"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><div><h3>2016–2025 source coverage</h3><p>Ready means scored questions were extracted from an answer-bearing PDF. Other statuses are shown honestly.</p></div></div>
         <div id="paperYears" class="year-grid"></div>
       </div>
-      <div class="notice">
-        <b>Copyright-safe design:</b> this starter package does not bulk-copy coaching-site question banks. Add questions you are entitled to republish, or store a source URL and open the original resource.
+      <div class="panel">
+        <div class="panel-title"><div><h3>What happens after the test</h3><p>The result page shows score, accuracy, time, every answer, and available solution text.</p></div></div>
+        <div class="rule-stack"><div><b>MCQ</b><span>+3 correct, −1 wrong, 0 skipped.</span></div><div><b>TITA</b><span>+3 correct, 0 wrong/skipped.</span></div><div><b>Review</b><span>Correct answer + extracted source solution where available; otherwise the source answer key is shown.</span></div></div>
       </div>
     </section>
 
@@ -315,6 +349,8 @@
   </main>
 </div>
 <script src="data/questions.js"></script>
+<script src="data/practice-bank.js"></script>
+<script src="data/pyq-bank.js"></script>
 <script src="data/weightage.js"></script>
 <script src="assets/app.js"></script>
 </body>

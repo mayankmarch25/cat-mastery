@@ -92,3 +92,31 @@ The package now includes an **Exam Intelligence** page. It combines:
 - one-click topic drills
 
 CAT 2020–2022 counts are preloaded from the user-provided Careers360 year-wise chapter-weightage PDF. XAT, SNAP, NMAT and CMAT are present as source-safe placeholders and intentionally remain empty until verified source data is added.
+
+## Real PYQ test center (v4)
+
+This package includes **683 scored PYQ records extracted from the uploaded answer-bearing CAT PDFs**.
+
+The Past CAT Papers page now supports:
+- year → slot → section selection
+- full extracted section, 10-question, or 5-question attempt
+- CAT MCQ and TITA scoring
+- timer
+- post-exam answer review
+- source answer key for extracted records
+- detailed source solution text where the uploaded PDF contains it (especially CAT 2022)
+
+Coverage is intentionally shown per year. Some uploaded PDFs are index/link ebooks rather than the underlying full paper, so the UI labels those years as partial instead of inventing questions or answers. See `data/pyq-coverage.json`.
+
+
+## v5 additions
+- 2,000 total usable questions in the bundled bank
+- Real PYQs remain separately labelled from original practice
+- Random Test Builder: 25 / 50 / 75 / 100 questions
+- Source filter: PYQ only / Practice only / mixed
+- Section filter: VARC / DILR / QA / all
+- Geometry Learning Path with 18 modules and progress tracking
+- 25-question geometry practice launch
+
+### Question-count integrity
+The site does **not** relabel generated practice as PYQ. `sourceType=PYQ` is reserved for extracted CAT previous-year questions.

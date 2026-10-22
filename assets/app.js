@@ -137,7 +137,7 @@ function renderSourceLibrary(){
 
 const progress=load(STORE,{attempts:[]});
 let imported=load(IMPORT,[]);
-const bank=()=>[...(window.STARTER_BANK||[]),...imported];
+const bank=()=>[...(window.PYQ_BANK||[]),...(window.STARTER_BANK||[]),...(window.PRACTICE_BANK||[]),...imported];
 
 function load(k,f){try{return JSON.parse(localStorage.getItem(k))||f}catch(e){return f}}
 function save(){localStorage.setItem(STORE,JSON.stringify(progress))}
@@ -146,7 +146,9 @@ function pad(n){return String(n).padStart(2,'0')}
 function iso(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 function pretty(d){return d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
 function seeded(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-function scoreQuestion(q,ans){if(ans===undefined||ans===null)return 0;if(ans===q.answer)return 3;return q.type==='TITA'?0:-1}
+function normAnswer(v){return String(v??'').trim().toLowerCase().replace(/[,₹\s]/g,'');}
+function isCorrectAnswer(q,ans){if(ans===undefined||ans===null||String(ans).trim()==='')return false;if(q.type==='TITA')return normAnswer(ans)===normAnswer(q.answerText??q.answer);return ans===q.answer}
+function scoreQuestion(q,ans){if(ans===undefined||ans===null||String(ans).trim()==='')return 0;if(isCorrectAnswer(q,ans))return 3;return q.type==='TITA'?0:-1}
 function attemptFor(date,section){return progress.attempts.filter(a=>a.date===date&&a.section===section).sort((a,b)=>b.ts-a.ts)[0]}
 function sectionPool(s){return bank().filter(q=>q.section===s)}
 
@@ -154,7 +156,9 @@ function dailyQuestions(date,section){
  const pool=sectionPool(section); if(!pool.length)return [];
  const seed=seeded(date+section); let arr=[...pool].sort((a,b)=>seeded(a.id+seed)-seeded(b.id+seed));
  if(section==='VARC'||section==='DILR'){
-   const anchor=arr[0]; const same=pool.filter(q=>q.title===anchor.title);
+   const anchor=arr[0];
+   let same=anchor.sourceType==='PYQ'?pool.filter(q=>q.sourceType==='PYQ'&&q.year===anchor.year&&q.slot===anchor.slot&&(anchor.stimulus?q.stimulus===anchor.stimulus:true)):pool.filter(q=>q.title===anchor.title);
+   if(same.length<4&&anchor.sourceType==='PYQ') same=pool.filter(q=>q.sourceType==='PYQ'&&q.year===anchor.year&&q.slot===anchor.slot);
    return same.slice(0,5);
  }
  return arr.slice(0,5);
@@ -168,6 +172,8 @@ function nav(view){
  if(view==='dashboard')renderDashboard();
  if(view==='daily')renderDaily();
  if(view==='topics')renderTopics();
+ if(view==='random')renderRandom();
+ if(view==='geometry')renderGeometry();
  if(view==='papers')renderPapers();
  if(view==='intelligence')renderIntelligence();
  if(view==='analytics')renderAnalytics();
@@ -233,9 +239,53 @@ function renderTopics(){
 $('topicSection').onchange=renderTopics;
 $('topicStart').onclick=()=>{let sec=$('topicSection').value,topic=$('topicName').value,diff=$('topicDifficulty').value;let qs=sectionPool(sec).filter(q=>q.topic===topic&&(diff==='all'||q.difficulty===diff)).slice(0,5);if(!qs.length)return alert('No questions in this filter yet. Import more questions.');startTest({date:iso(new Date()),section:sec,questions:qs,mode:'topic',label:`${sec} · ${topic}`})}
 
-function renderPapers(){
- $('paperYears').innerHTML=Array.from({length:14},(_,i)=>2012+i).map(y=>`<div class="year-card"><strong>${y}</strong><span>${y>=2017?'Verified PYQ capable':'Reconstructed unless verified'}</span></div>`).join('');
+
+const GEOMETRY_LESSONS=[
+ {t:'1. Lines & basic angle language',k:'Point, line, ray, angle; acute/right/obtuse/straight/reflex/full angles.',f:['Straight line = 180°','Around a point = 360°']},
+ {t:'2. Angle pairs',k:'Complementary, supplementary and vertically opposite angles.',f:['Complementary sum = 90°','Supplementary sum = 180°','Vertically opposite angles are equal']},
+ {t:'3. Parallel lines & transversals',k:'Corresponding, alternate and co-interior angle relationships.',f:['Alternate interior angles are equal','Co-interior angles sum to 180°']},
+ {t:'4. Triangle fundamentals',k:'Angle sum, exterior angle, side feasibility and area.',f:['A+B+C=180°','Exterior angle = sum of two remote interior angles','Area = 1/2 bh']},
+ {t:'5. Right triangles',k:'Pythagoras, common triples and inradius shortcut.',f:['a²+b²=c²','r=(a+b−c)/2']},
+ {t:'6. Angle bisectors & cevians',k:'Internal/external bisectors and proportional division of the opposite side.',f:['BD/DC = AB/AC for an internal angle bisector']},
+ {t:'7. Medians & centroid',k:'A median joins a vertex to the opposite midpoint; all three medians meet at the centroid.',f:['Centroid divides each median 2:1 from the vertex']},
+ {t:'8. Altitudes & orthocenter',k:'Altitudes are perpendiculars from vertices; their concurrency point is the orthocenter.',f:['Acute triangle: orthocenter inside','Right triangle: at right-angle vertex']},
+ {t:'9. Perpendicular bisectors & circumcenter',k:'Perpendicular bisectors meet at the circumcenter, equidistant from vertices.',f:['Right triangle circumcenter = midpoint of hypotenuse']},
+ {t:'10. Incenter & incircle',k:'Angle bisectors meet at the incenter, equidistant from all sides.',f:['Area = r×semiperimeter']},
+ {t:'11. Similarity & proportionality',k:'Use equal angles / proportional sides to establish similarity and transfer ratios.',f:['Similar triangles: corresponding sides proportional','Areas scale as square of side ratio']},
+ {t:'12. Thales & midpoint theorem',k:'A line parallel to one side of a triangle creates proportional segments.',f:['Midpoint connector is parallel to third side and half its length']},
+ {t:'13. Quadrilaterals',k:'Core properties of square, rectangle, parallelogram, rhombus and trapezium.',f:['Quadrilateral interior-angle sum = 360°']},
+ {t:'14. Parallelograms & rhombi',k:'Opposite sides/angles and diagonal behaviour.',f:['Parallelogram diagonals bisect each other','Rhombus diagonals are perpendicular bisectors']},
+ {t:'15. Trapezium',k:'Parallel-side structure, mid-segment and isosceles trapezium properties.',f:['Mid-segment = half the sum of parallel sides']},
+ {t:'16. Circle fundamentals',k:'Radius, diameter, chord, secant and tangent.',f:['Diameter is the longest chord','Perpendicular from centre to chord bisects chord']},
+ {t:'17. Angles in circles',k:'Same-segment angles, cyclic quadrilaterals and alternate-segment theorem.',f:['Opposite angles of cyclic quadrilateral sum to 180°']},
+ {t:'18. Tangents & common tangents',k:'Radius-tangent perpendicularity and equal tangent lengths from an external point.',f:['Radius ⟂ tangent at contact','Tangents from same external point are equal']}
+];
+function shuffled(a){let x=[...a];for(let i=x.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x}
+function renderRandom(){
+ const all=bank(), pyq=all.filter(q=>q.sourceType==='PYQ').length, pr=all.filter(q=>q.sourceType!=='PYQ').length;
+ $('bankBreakdown').innerHTML=`<div><strong>${all.length}</strong><span>Total questions</span></div><div><strong>${pyq}</strong><span>Real CAT PYQ</span></div><div><strong>${pr}</strong><span>Practice / original</span></div><div><strong>${all.filter(q=>q.section==='QA').length}</strong><span>QA</span></div><div><strong>${all.filter(q=>q.section==='DILR').length}</strong><span>DILR</span></div><div><strong>${all.filter(q=>q.section==='VARC').length}</strong><span>VARC</span></div>`;
+ const c=Number($('randomCount').value),sec=$('randomSection').value,src=$('randomSource').value;let pool=all.filter(q=>(sec==='ALL'||q.section===sec)&&(src==='ALL'||(src==='PYQ'?q.sourceType==='PYQ':q.sourceType!=='PYQ')));
+ $('randomSummary').textContent=`${pool.length} questions available for this filter. ${Math.min(c,pool.length)} will be selected without duplicates.`;
 }
+function startRandom(){const c=Number($('randomCount').value),sec=$('randomSection').value,src=$('randomSource').value,tv=$('randomTime').value;let pool=bank().filter(q=>(sec==='ALL'||q.section===sec)&&(src==='ALL'||(src==='PYQ'?q.sourceType==='PYQ':q.sourceType!=='PYQ')));if(pool.length<c)return alert(`Only ${pool.length} questions match this filter. Reduce test size or broaden filters.`);let qs=shuffled(pool).slice(0,c);let seconds=tv==='auto'?Math.round(c*100):Number(tv)*60;startTest({date:iso(new Date()),section:sec==='ALL'?'MIXED':sec,questions:qs,mode:'random',label:`Random Test · ${c} questions`,seconds});}
+function renderGeometry(){const done=load('catGeometryDoneV1',[]);$('geometryProgress').textContent=Math.round(100*done.length/GEOMETRY_LESSONS.length)+'%';$('geometryModules').innerHTML=GEOMETRY_LESSONS.map((m,i)=>`<article class="lesson-card ${done.includes(i)?'done':''}"><div class="lesson-top"><span class="pill">Module ${i+1}</span><button class="icon-btn" onclick="window.CAT.toggleGeometry(${i})">${done.includes(i)?'✓':'Mark done'}</button></div><h3>${m.t}</h3><p>${m.k}</p><div class="formula-box">${m.f.map(x=>`<span>${x}</span>`).join('')}</div></article>`).join('');}
+function toggleGeometry(i){let done=load('catGeometryDoneV1',[]);if(done.includes(i))done=done.filter(x=>x!==i);else done.push(i);localStorage.setItem('catGeometryDoneV1',JSON.stringify(done));renderGeometry();}
+
+function paperQuestions(year,slot,section){return (window.PYQ_BANK||[]).filter(q=>q.year===Number(year)&&q.slot===Number(slot)&&q.section===section)}
+function paperCoverage(year){const qs=(window.PYQ_BANK||[]).filter(q=>q.year===year);return {count:qs.length,slots:[...new Set(qs.map(q=>q.slot))].sort(),sections:[...new Set(qs.map(q=>q.section))]}}
+function renderPapers(){
+ const years=Array.from({length:10},(_,i)=>2016+i); const current=$('paperYear')?.value||String(years.find(y=>paperCoverage(y).count)||2022);
+ $('paperYear').innerHTML=years.map(y=>`<option value="${y}" ${String(y)===current?'selected':''}>CAT ${y}</option>`).join('');
+ const y=Number($('paperYear').value), cov=paperCoverage(y), slots=cov.slots.length?cov.slots:[1];
+ const curSlot=Number($('paperSlot').value||slots[0]); $('paperSlot').innerHTML=slots.map(x=>`<option value="${x}" ${x===curSlot?'selected':''}>Slot ${x}</option>`).join('');
+ const sec=$('paperSection').value, slot=Number($('paperSlot').value), qs=paperQuestions(y,slot,sec);
+ const sectionCounts=['VARC','DILR','QA'].map(x=>`${x}: ${paperQuestions(y,slot,x).length}`).join(' · ');
+ $('paperSelectionSummary').innerHTML=qs.length?`<div class="source-card"><b>CAT ${y} · Slot ${slot} · ${sec}</b><span>${qs.length} scored questions extracted from your uploaded answer-bearing PDF. ${sectionCounts}</span></div>`:`<div class="notice"><b>No scored question bank extracted for CAT ${y} · Slot ${slot} · ${sec}.</b> The source may be missing, link-only, question-only, or lack a machine-readable answer key.</div>`;
+ const status={2016:['partial','Source uploaded; answer key not extractable'],2017:['ready','Scored PYQs loaded'],2018:['missing','No full standalone paper supplied'],2019:['ready','Scored PYQs loaded'],2020:['ready','Scored PYQs loaded'],2021:['ready','Scored PYQs loaded'],2022:['ready','Scored PYQs + detailed solutions'],2023:['partial','Uploaded PDF mainly links/index'],2024:['partial','Uploaded PDF mainly links/index'],2025:['partial','Full questions; answers not consistently embedded']};
+ $('paperYears').innerHTML=years.map(y=>{const c=paperCoverage(y),st=status[y]||['missing','Not loaded'];return `<div class="year-card ${st[0]}"><strong>${y}</strong><span>${st[1]}</span><small>${c.count?c.count+' scored questions in site':'Not yet score-ready'}</small></div>`}).join('');
+}
+function startSelectedPaper(){const y=Number($('paperYear').value),slot=Number($('paperSlot').value),section=$('paperSection').value,size=$('paperSize').value;let qs=paperQuestions(y,slot,section);if(!qs.length){alert('This year/slot/section is not score-ready from the uploaded source yet.');return;}if(size!=='full')qs=qs.slice(0,Number(size));const seconds=size==='full'?(y<=2019?3600:2400):1200;startTest({date:`CAT ${y}`,section,questions:qs,mode:'paper',label:`CAT ${y} · Slot ${slot} · ${section}`,seconds});}
+if($('paperYear'))$('paperYear').onchange=()=>{renderPapers()};if($('paperSlot'))$('paperSlot').onchange=renderPapers;if($('paperSection'))$('paperSection').onchange=renderPapers;if($('paperStart'))$('paperStart').onclick=startSelectedPaper;
 
 function topicStats(){
  let out={}; progress.attempts.forEach(a=>a.details.forEach(d=>{let t=d.topic||(d.section+' general');if(!out[t])out[t]={topic:t,attempted:0,correct:0};if(d.answer!==null&&d.answer!==undefined){out[t].attempted++;if(d.correct)out[t].correct++}}));
@@ -310,19 +360,20 @@ $('bankImport').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new File
 $('clearImported').onclick=()=>{if(confirm('Clear imported question bank from this browser?')){imported=[];saveImported();renderSources()}}
 
 function startTest(t){
- clearInterval(state.timer);state.test=t;state.answers={};state.seconds=1200;state.startedAt=Date.now();
+ clearInterval(state.timer);state.test=t;state.answers={};state.seconds=t.seconds||1200;state.startedAt=Date.now();
  $('testMeta').textContent=`${t.section} · ${t.date}`;$('testName').textContent=t.label||`${t.section} Daily Test`;
- $('testSourceLine').textContent=sourceMix(t.questions);$('stimulus').innerHTML=t.questions[0]?.stimulus?`<div class="stimulus"><p>${t.questions[0].stimulus}</p></div>`:'';
- $('questionArea').innerHTML=t.questions.map((q,i)=>`<div class="question-card"><div class="qmeta">QUESTION ${i+1} OF ${t.questions.length} · ${q.topic} · ${q.difficulty}</div><h3>${q.question}</h3>${q.options.map((o,j)=>`<div class="option" data-q="${i}" data-o="${j}" onclick="window.CAT.pick(${i},${j},this)">${String.fromCharCode(65+j)}. ${o}</div>`).join('')}</div>`).join('');
+ $('testSourceLine').textContent=sourceMix(t.questions);$('stimulus').innerHTML='';
+ $('questionArea').innerHTML=t.questions.map((q,i)=>{const showStim=q.stimulus&&(i===0||q.stimulus!==t.questions[i-1]?.stimulus);const answerUI=(q.options&&q.options.length)?q.options.map((o,j)=>`<div class="option" data-q="${i}" data-o="${j}" onclick="window.CAT.pick(${i},${j},this)">${String.fromCharCode(65+j)}. ${o}</div>`).join(''):`<input class="tita-input" data-tita="${i}" placeholder="Type your answer" oninput="window.CAT.pickTita(${i},this.value)">`;return `<div class="question-card">${showStim?`<div class="stimulus"><p>${q.stimulus}</p></div>`:''}<div class="qmeta">QUESTION ${i+1} OF ${t.questions.length} · ${q.type} · ${q.sourceLabel||q.topic}</div><h3>${q.question}</h3>${answerUI}<div class="q-source">${q.sourceLabel||''}</div></div>`}).join('');
  updateProgress();nav('test');renderTimer();state.timer=setInterval(()=>{state.seconds--;renderTimer();if(state.seconds<=0){clearInterval(state.timer);submitTest()}},1000);
 }
 function renderTimer(){let m=Math.floor(state.seconds/60),s=state.seconds%60;$('timer').textContent=`${pad(m)}:${pad(s)}`}
 function updateProgress(){if(!state.test)return;$('testProgress').style.width=(100*Object.keys(state.answers).length/state.test.questions.length)+'%'}
 function pick(i,j,el){state.answers[i]=j;document.querySelectorAll(`[data-q="${i}"]`).forEach(x=>x.classList.remove('selected'));el.classList.add('selected');updateProgress()}
+function pickTita(i,v){if(String(v).trim()==='')delete state.answers[i];else state.answers[i]=v;updateProgress()}
 function submitTest(){
  if(!state.test)return;clearInterval(state.timer);let t=state.test,correct=0,answered=0,wrong=0,score=0;
- let details=t.questions.map((q,i)=>{let ans=state.answers[i];if(ans!==undefined){answered++;if(ans===q.answer)correct++;else wrong++}score+=scoreQuestion(q,ans);return{id:q.id,section:q.section,topic:q.topic,question:q.question,answer:ans===undefined?null:ans,answerText:ans===undefined?null:q.options[ans],correctAnswer:q.answer,correctText:q.options[q.answer],correct:ans===q.answer,explanation:q.explanation,howToThink:q.howToThink,sourceLabel:q.sourceLabel,difficulty:q.difficulty}});
- let a={id:Date.now(),ts:Date.now(),date:t.date,section:t.section,mode:t.mode||'daily',score,maxScore:t.questions.length*3,correct,wrong,skipped:t.questions.length-answered,answered,timeSec:Math.min(1200,Math.round((Date.now()-state.startedAt)/1000)),sourceMix:sourceMix(t.questions),details};
+ let details=t.questions.map((q,i)=>{let ans=state.answers[i],ok=isCorrectAnswer(q,ans);if(ans!==undefined&&ans!==null&&String(ans).trim()!==''){answered++;if(ok)correct++;else wrong++}score+=scoreQuestion(q,ans);const userText=q.type==='TITA'?(ans===undefined?null:ans):(ans===undefined?null:q.options[ans]);const correctText=q.type==='TITA'?(q.answerText??q.answer):(q.options[q.answer]??q.answerText??q.answer);return{id:q.id,section:q.section,topic:q.topic,question:q.question,answer:ans===undefined?null:ans,answerText:userText,correctAnswer:q.answer,correctText,correct:ok,explanation:q.explanation,howToThink:q.howToThink,sourceLabel:q.sourceLabel,difficulty:q.difficulty}});
+ let a={id:Date.now(),ts:Date.now(),date:t.date,section:t.section,mode:t.mode||'daily',score,maxScore:t.questions.length*3,correct,wrong,skipped:t.questions.length-answered,answered,timeSec:Math.min(t.seconds||1200,Math.round((Date.now()-state.startedAt)/1000)),sourceMix:sourceMix(t.questions),details};
  progress.attempts.push(a);save();renderResult(a);nav('result');
 }
 function renderResult(a){
@@ -336,9 +387,11 @@ $('testSubmit').onclick=submitTest;$('testExit').onclick=()=>{clearInterval(stat
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(progress,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cat-mastery-progress.json';a.click();URL.revokeObjectURL(a.href)}
 $('progressImport').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.attempts))throw new Error('Invalid progress file');progress.attempts=x.attempts;save();renderDashboard();alert('Progress imported.')}catch(err){alert(err.message)}};r.readAsText(f)}
 
+if($('randomStart'))$('randomStart').onclick=startRandom;['randomCount','randomSection','randomSource'].forEach(id=>{const el=$(id);if(el)el.onchange=renderRandom});if($('geometryPractice'))$('geometryPractice').onclick=()=>{let qs=shuffled(bank().filter(q=>q.section==='QA'&&normalTopic(q.topic).includes('geometry'))).slice(0,25);startTest({date:iso(new Date()),section:'QA',questions:qs,mode:'geometry',label:'Geometry Practice · 25 questions',seconds:2500});};
+
 ['intelExam','intelSection','intelYear','intelSort'].forEach(id=>{const el=$(id); if(el) el.onchange=renderIntelligence;});
 
-window.CAT={startDaily:(date,section)=>startTest({date,section,questions:dailyQuestions(date,section),mode:'daily',label:`Daily ${section}`}),
+window.CAT={toggleGeometry,pickTita,startSelectedPaper,startDaily:(date,section)=>startTest({date,section,questions:dailyQuestions(date,section),mode:'daily',label:`Daily ${section}`}),
 practiceTopic:(section,topic)=>{let qs=sectionPool(section).filter(q=>normalizeTopicName(q.topic)===normalizeTopicName(topic)).slice(0,5);if(!qs.length){alert('No publishable questions for this topic are bundled yet. Import a question bank or use Topic Practice after adding questions.');return;}startTest({date:iso(new Date()),section,questions:qs,mode:'topic',label:`${section} · ${topic}`})},
 pick,selectDate:ds=>{let [y,m,d]=ds.split('-').map(Number);state.selectedDate=new Date(y,m-1,d);renderDaily()}};
 $('todayLabel').textContent=' · '+pretty(new Date()); state.selectedDate=new Date();state.calDate=new Date(); renderDashboard(); renderTopics();

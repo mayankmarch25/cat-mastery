@@ -1,0 +1,189 @@
+/* ===================================================================
+   CAT Mastery — theme layer
+   Loaded after styles.css. Retones the whole app and styles the two
+   new surfaces (dashboard, quant track).
+
+   Direction: an instrument panel for a long campaign, not a SaaS
+   dashboard. Numerals are the subject matter, so they carry the
+   display weight; everything else stays quiet. Cool slate and teal
+   rather than warm paper, so the signal colours mean something.
+   =================================================================== */
+
+:root{
+  --bg:#eef2f5;
+  --paper:#ffffff;
+  --ink:#0d1720;
+  --ink-2:#44555f;
+  --muted:#6b7d87;
+  --line:#dbe3e8;
+  --line-soft:#e9eef1;
+
+  --slate:#111d27;
+  --slate-2:#1b2b38;
+
+  --signal:#0d6e66;          /* mastery, primary action */
+  --signal-soft:#e4f1ef;
+  --alert:#a3530c;           /* needs work — used only for attention */
+  --alert-soft:#fbf0e3;
+  --red:#b0392a;
+  --redsoft:#fbeeec;
+  --green:#0d6e66;
+  --greensoft:#e4f1ef;
+  --blue:#1f4e79;
+  --bluesoft:#e9f0f6;
+  --shadow:0 1px 2px rgba(13,23,32,.05), 0 8px 24px -16px rgba(13,23,32,.28);
+
+  --sans:"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --serif:"Newsreader", ui-serif, Georgia, "Iowan Old Style", serif;
+}
+
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);
+     -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:500;letter-spacing:-.005em}
+strong,b{font-weight:600}
+
+/* numerals are data: keep them aligned and unambiguous */
+.readings strong,.metric-grid strong,.bank-breakdown strong,.timer,
+.score-main strong,.score-cells strong,.integrity-row .iv,.chapter-stat b,
+.lod-chip b,.year-card strong{font-variant-numeric:tabular-nums lining-nums}
+
+/* ---- shell ---------------------------------------------------------- */
+.sidebar{background:var(--slate);border-right:0;color:#c6d3dc}
+.brand{color:#fff}
+.brand small{color:#8ba2b1}
+.brand-mark{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff}
+.goal-card{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#d4dee5}
+.goal-card span,.goal-card small{color:#8ba2b1}
+.nav-group{color:#6f8899;letter-spacing:.08em;font-size:10px;text-transform:none}
+.nav-item{color:#bccbd5}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff;font-weight:500}
+.nav-item.active{background:var(--signal);color:#fff;font-weight:600}
+.sidebar-foot{border-top-color:rgba(255,255,255,.12);color:#b6c6d1}
+.sidebar-foot span{color:#7e97a7}
+.topbar{background:var(--paper);border-bottom:1px solid var(--line)}
+
+/* ---- common surfaces ------------------------------------------------ */
+.panel{border-radius:10px;box-shadow:var(--shadow);border-color:var(--line)}
+.panel h3,.panel-title h3{font-size:17px}
+.btn{border-radius:8px;border-color:#cbd6dd;font-weight:500;font-size:13.5px}
+.btn.primary{background:var(--signal);border-color:var(--signal)}
+.btn.primary:hover{background:#0a5c55;border-color:#0a5c55}
+.btn.ghost:hover{background:#eaeff2}
+.pill{border-radius:6px;font-weight:600}
+.pill.good{background:var(--signal-soft);color:var(--signal)}
+.notice{border-radius:10px;border-color:#e2d3bc;background:var(--alert-soft)}
+.option{border-radius:8px}
+.option.selected{background:var(--signal-soft);border-color:var(--signal)}
+.eyebrow{display:none}
+
+/* ---- dashboard ------------------------------------------------------ */
+.dash-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:24px}
+.dash-head h1{font-size:34px;line-height:1.15;margin:0;max-width:17ch}
+.dash-head p{margin:8px 0 0;color:var(--muted);font-size:13.5px}
+.dash-actions{display:flex;gap:9px;flex-shrink:0}
+
+.panel-flat{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+            padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.strip-head{display:flex;justify-content:space-between;align-items:baseline;gap:18px;margin-bottom:16px}
+.strip-head h2{font-size:17px;margin:0}
+.strip-head p{margin:0;color:var(--muted);font-size:12.5px}
+
+/* the syllabus strip is the hero: the book's seven parts, sized by
+   chapter count, filled by how much of each you have actually worked */
+.syllabus-bar{display:flex;gap:3px;height:52px;align-items:stretch}
+.syl-seg{position:relative;border-radius:4px;background:#e4eaee;overflow:hidden;
+         cursor:pointer;min-width:26px;border:0;padding:0;display:block}
+.syl-seg .fill{position:absolute;left:0;bottom:0;right:0;background:var(--signal);opacity:.92}
+.syl-seg .tag{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;
+              font-weight:600;color:var(--ink-2);mix-blend-mode:normal}
+.syl-seg.worked .tag{color:#fff}
+.syl-seg:hover{outline:2px solid var(--slate);outline-offset:2px}
+.syllabus-legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:12px;color:var(--muted)}
+.syllabus-legend b{color:var(--ink);font-weight:600}
+
+/* readings: hairline-separated figures, not another row of cards */
+.readings{display:grid;grid-template-columns:repeat(5,1fr);background:var(--paper);
+          border:1px solid var(--line);border-radius:10px;margin-bottom:18px;
+          box-shadow:var(--shadow);overflow:hidden}
+.readings article{padding:18px 20px;border-left:1px solid var(--line-soft);display:grid;gap:3px}
+.readings article:first-child{border-left:0}
+.readings span{font-size:12px;color:var(--muted)}
+.readings strong{font-size:30px;font-family:var(--serif);font-weight:500;line-height:1.1}
+.readings em{font-style:normal;font-size:11px;color:#8d9ca5}
+
+.section-card{background:#fafcfd;border-radius:9px}
+.section-card .badge{background:var(--bluesoft);color:var(--blue);border-radius:5px}
+.focus-item{border-radius:9px}
+.focus-item.weak{border-color:#e4cfae;background:var(--alert-soft)}
+.focus-item.weak span{color:var(--alert)}
+
+/* ---- quant track ---------------------------------------------------- */
+.block-stack{display:grid;gap:16px}
+.block-card{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+            box-shadow:var(--shadow);overflow:hidden}
+.block-top{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;
+           padding:18px 22px;cursor:pointer;background:var(--slate);color:#fff}
+.block-top h3{margin:0;font-size:19px;color:#fff}
+.block-top .sub{font-size:12.5px;color:#9fb4c1;margin-top:3px}
+.block-meter{display:flex;align-items:center;gap:14px}
+.block-meter .pct{font-size:22px;font-family:var(--serif);font-variant-numeric:tabular-nums}
+.block-meter .track{width:120px;height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+.block-meter .track span{display:block;height:100%;background:#4fd1c0}
+.block-why{padding:16px 22px;border-bottom:1px solid var(--line-soft);
+           color:var(--ink-2);font-size:13.5px;line-height:1.6;max-width:78ch}
+.block-why .ref{color:var(--muted);font-size:12px;margin-top:6px}
+
+.chapter{border-bottom:1px solid var(--line-soft);padding:18px 22px}
+.chapter:last-child{border-bottom:0}
+.chapter-head{display:grid;grid-template-columns:38px 1fr auto;gap:16px;align-items:start}
+.chapter-no{font-family:var(--serif);font-size:25px;color:#aebcc5;line-height:1;
+            font-variant-numeric:tabular-nums}
+.chapter-name{margin:0;font-size:17px}
+.chapter-ref{color:var(--muted);font-size:12px;margin-top:4px}
+.chapter-stats{display:flex;gap:16px;align-items:center}
+.chapter-stat{text-align:right}
+.chapter-stat b{display:block;font-size:16px;font-family:var(--serif);font-weight:500}
+.chapter-stat small{color:var(--muted);font-size:11px}
+.chapter-stat.weak b{color:var(--alert)}
+.chapter-stat.strong b{color:var(--signal)}
+
+.chapter-body{margin:14px 0 0 54px}
+.teach{display:grid;gap:14px;background:#f7fafb;border:1px solid var(--line-soft);
+       border-radius:9px;padding:16px 18px;margin-bottom:14px}
+.teach h5{margin:0 0 7px;font-size:12px;color:var(--muted);font-family:var(--sans);
+          font-weight:600;letter-spacing:.02em}
+.teach ul{margin:0;padding-left:18px;display:grid;gap:7px}
+.teach li{font-size:13.5px;line-height:1.6;color:var(--ink-2);max-width:82ch}
+.teach .trap li{color:#8a4c12}
+.teach .drill{font-size:13px;color:var(--ink);background:var(--signal-soft);
+              border-radius:7px;padding:10px 12px}
+.teach .drill b{color:var(--signal)}
+
+.lod-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.lod-chip{border:1px solid var(--line);background:var(--paper);border-radius:8px;
+          padding:9px 13px;cursor:pointer;display:grid;gap:2px;text-align:left;min-width:132px}
+.lod-chip:hover{border-color:var(--signal);background:var(--signal-soft)}
+.lod-chip:disabled{opacity:.45;cursor:not-allowed}
+.lod-chip b{font-size:13px}
+.lod-chip small{font-size:11px;color:var(--muted)}
+.chapter-toggle{border:0;background:transparent;color:var(--signal);cursor:pointer;
+                font-size:13px;font-weight:600;padding:0;margin-left:54px}
+.chapter.open{background:#fcfdfe}
+
+/* ---- responsive ----------------------------------------------------- */
+@media(max-width:1100px){
+  .readings{grid-template-columns:repeat(3,1fr)}
+  .readings article:nth-child(4){border-left:0}
+}
+@media(max-width:820px){
+  .dash-head{flex-direction:column;align-items:flex-start}
+  .dash-head h1{font-size:27px}
+  .readings{grid-template-columns:repeat(2,1fr)}
+  .readings article:nth-child(odd){border-left:0}
+  .block-top{grid-template-columns:1fr}
+  .chapter-head{grid-template-columns:30px 1fr}
+  .chapter-stats{grid-column:1/-1;justify-content:flex-start;margin-top:10px}
+  .chapter-body,.chapter-toggle{margin-left:0}
+  .syllabus-bar{height:44px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

@@ -27,3 +27,14 @@
 .paper-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.paper-filters select{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff}.year-card.ready{border-color:#b9ddcb;background:#f4fbf7}.year-card.partial{border-color:#efd9a6;background:#fffaf0}.year-card.missing{opacity:.7}.year-card small{display:block;margin-top:5px;line-height:1.35}.tita-input{width:100%;max-width:360px;border:1px solid var(--line);border-radius:10px;padding:12px 13px;font-size:15px}.q-source{font-size:10px;color:#8b857e;margin-top:10px}.solution-long{white-space:pre-wrap}.coverage-count{font-size:12px;color:#555;margin-top:4px}
 
 .builder-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:14px 0}.builder-grid label{display:grid;gap:6px;font-size:12px;color:var(--muted)}.builder-grid select{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.bank-breakdown{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.bank-breakdown>div{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid}.bank-breakdown strong{font-size:22px}.bank-breakdown span{font-size:11px;color:var(--muted)}.geometry-hero{display:flex;align-items:center;gap:22px}.geometry-hero>div:first-child{width:110px;height:110px;border-radius:50%;background:var(--bluesoft);display:grid;place-items:center;text-align:center}.geometry-hero strong{font-size:25px}.geometry-hero span{font-size:10px;color:var(--muted)}.lesson-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.lesson-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px}.lesson-card.done{border-color:#9bd5b8;background:#f6fcf9}.lesson-top{display:flex;justify-content:space-between;align-items:center}.lesson-card h3{font-size:15px;margin:10px 0 7px}.lesson-card p{font-size:12px;color:var(--muted);line-height:1.5}.formula-box{display:grid;gap:5px;background:#f7f6f3;border-radius:10px;padding:9px;margin-top:10px}.formula-box span{font-size:11px;font-weight:650}@media(max-width:900px){.lesson-grid{grid-template-columns:1fr}.builder-grid{grid-template-columns:1fr}}
+
+
+/* ---- integrity panel ------------------------------------------------ */
+.integrity-rows{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.integrity-row{display:flex;gap:14px;align-items:flex-start}
+.integrity-row .iv{min-width:72px;font-weight:700;font-size:20px;line-height:1.2}
+.integrity-row b{display:block;font-size:14px}
+.integrity-row p{margin:2px 0 0;font-size:12.5px;opacity:.72;line-height:1.45}
+.pill.warn{background:rgba(214,140,30,.16);color:#d68c1e;border:1px solid rgba(214,140,30,.35)}
+.review-answer.warnline{font-size:12.5px;opacity:.8;border-left:3px solid rgba(214,140,30,.6);padding-left:10px;margin-top:8px}
+.notice.integrity-note{border-left:3px solid rgba(214,140,30,.6)}

@@ -137,7 +137,9 @@ function renderSourceLibrary(){
 
 const progress=load(STORE,{attempts:[]});
 let imported=load(IMPORT,[]);
-const bank=()=>[...(window.PYQ_BANK||[]),...(window.STARTER_BANK||[]),...(window.PRACTICE_BANK||[]),...imported];
+const CFG=Object.assign({includePYQ:true,showIntegrityPanel:true,nonRepeatingDaily:true,dailyPerSection:5},window.SITE_CONFIG||{});
+const pyqBank=()=>CFG.includePYQ?(window.PYQ_BANK||[]):[];
+const bank=()=>[...pyqBank(),...(window.STARTER_BANK||[]),...(window.PRACTICE_BANK||[]),...imported];
 
 function load(k,f){try{return JSON.parse(localStorage.getItem(k))||f}catch(e){return f}}
 function save(){localStorage.setItem(STORE,JSON.stringify(progress))}
@@ -152,16 +154,51 @@ function scoreQuestion(q,ans){if(ans===undefined||ans===null||String(ans).trim()
 function attemptFor(date,section){return progress.attempts.filter(a=>a.date===date&&a.section===section).sort((a,b)=>b.ts-a.ts)[0]}
 function sectionPool(s){return bank().filter(q=>q.section===s)}
 
+function dayNumber(date){const d=Date.parse(date+'T00:00:00Z');return Math.floor(d/86400000)}
+function stableOrder(pool){return [...pool].sort((a,b)=>seeded(a.id)-seeded(b.id)||(a.id<b.id?-1:1))}
+function groupsFor(pool){
+ // VARC and DILR questions belong to sets that share a stimulus, so a set is
+ // kept together rather than broken across days.
+ const map=new Map();
+ stableOrder(pool).forEach(q=>{
+   const k=(q.stimulus&&q.stimulus.length>40)?('S:'+q.stimulus.slice(0,160)):('T:'+(q.title||q.id));
+   if(!map.has(k))map.set(k,[]);
+   map.get(k).push(q);
+ });
+ return [...map.values()];
+}
+function chunksFor(pool,need){
+ // Groups are packed into day-sized chunks WITHOUT splitting a set and without
+ // discarding anything, so every question in the bank is eventually served.
+ const gs=groupsFor(pool),out=[];let cur=[];
+ gs.forEach(g=>{cur=cur.concat(g);if(cur.length>=need){out.push(cur);cur=[]}});
+ if(cur.length){if(out.length)out[out.length-1]=out[out.length-1].concat(cur);else out.push(cur)}
+ return out;
+}
 function dailyQuestions(date,section){
  const pool=sectionPool(section); if(!pool.length)return [];
- const seed=seeded(date+section); let arr=[...pool].sort((a,b)=>seeded(a.id+seed)-seeded(b.id+seed));
- if(section==='VARC'||section==='DILR'){
-   const anchor=arr[0];
-   let same=anchor.sourceType==='PYQ'?pool.filter(q=>q.sourceType==='PYQ'&&q.year===anchor.year&&q.slot===anchor.slot&&(anchor.stimulus?q.stimulus===anchor.stimulus:true)):pool.filter(q=>q.title===anchor.title);
-   if(same.length<4&&anchor.sourceType==='PYQ') same=pool.filter(q=>q.sourceType==='PYQ'&&q.year===anchor.year&&q.slot===anchor.slot);
-   return same.slice(0,5);
+ const need=CFG.dailyPerSection||5;
+ if(!CFG.nonRepeatingDaily){
+   const seed=seeded(date+section);
+   return [...pool].sort((a,b)=>seeded(a.id+seed)-seeded(b.id+seed)).slice(0,need);
  }
- return arr.slice(0,5);
+ const day=dayNumber(date);
+ if(section==='VARC'||section==='DILR'){
+   const ch=chunksFor(pool,need); if(!ch.length)return [];
+   return ch[((day%ch.length)+ch.length)%ch.length];
+ }
+ const arr=stableOrder(pool);
+ const start=((day*need)%arr.length+arr.length)%arr.length;
+ let out=arr.slice(start,start+need);
+ if(out.length<need)out=out.concat(arr.slice(0,need-out.length));
+ return out;
+}
+// How many days of non-repeating practice the current bank supports.
+function cycleDays(section){
+ const pool=sectionPool(section); if(!pool.length)return 0;
+ const need=CFG.dailyPerSection||5;
+ if(section==='VARC'||section==='DILR')return chunksFor(pool,need).length;
+ return Math.floor(pool.length/need);
 }
 function sourceMix(qs){let m={PYQ:0,RECONSTRUCTED:0,ORIGINAL:0,EXTERNAL:0};qs.forEach(q=>m[q.sourceType]=(m[q.sourceType]||0)+1);return Object.entries(m).filter(x=>x[1]).map(([k,v])=>`${v} ${k}`).join(' · ')}
 
@@ -173,6 +210,7 @@ function nav(view){
  if(view==='daily')renderDaily();
  if(view==='topics')renderTopics();
  if(view==='random')renderRandom();
+ if(view==='quant')renderQuant();
  if(view==='geometry')renderGeometry();
  if(view==='papers')renderPapers();
  if(view==='intelligence')renderIntelligence();
@@ -194,28 +232,58 @@ function metrics(){
  return {tests:A.length,answered,accuracy:answered?Math.round(100*correct/answered):0,streak};
 }
 function renderDashboard(){
- const m=metrics(); $('mStreak').textContent=m.streak;$('mTests').textContent=m.tests;$('mAnswered').textContent=m.answered;$('mAccuracy').textContent=m.accuracy+'%';
+ const m=metrics(); $('mStreak').textContent=m.streak;$('mTests').textContent=m.tests;
+ $('mAnswered').textContent=m.answered;$('mAccuracy').textContent=m.accuracy+'%';
  $('dashDate').textContent=pretty(new Date());
- const date=iso(new Date()); const done=sections.filter(s=>attemptFor(date,s)).length,pct=Math.round(done/3*100);
- $('completionPct').textContent=pct+'%';$('completionRing').style.background=`conic-gradient(var(--red) ${pct}%,#3a3a3a ${pct}%)`;
+ const date=iso(new Date()); const done=sections.filter(s=>attemptFor(date,s)).length;
+ $('completionPct').textContent=Math.round(done/3*100)+'%';
+ renderSyllabusStrip();
  $('todaySectionCards').innerHTML=sections.map(s=>sectionCard(date,s)).join('');
  drawTrend($('trendCanvas'),progress.attempts.slice(-30));
  renderFocus();
 }
+function renderSyllabusStrip(){
+ const host=$('syllabusBar');if(!host)return;
+ const T=QT(),bp=blockProgress();
+ const totalCh=T.blocks.reduce((a,b)=>a+b.chapters.length,0)||1;
+ host.innerHTML=T.blocks.map(b=>{
+   const p=bp[b.id]||{pct:0};
+   return `<button class="syl-seg ${p.pct>55?'worked':''}" style="flex:${b.chapters.length}"
+     title="${b.name}: ${b.subtitle} — ${p.pct}% worked" onclick="window.CAT.goBlock('${b.id}')">
+     <span class="fill" style="height:${p.pct}%"></span><span class="tag">${b.id}</span></button>`}).join('');
+ const studiedCount=studied().length;
+ const avg=Math.round(T.blocks.reduce((a,b)=>a+(bp[b.id]||{pct:0}).pct*b.chapters.length,0)/totalCh);
+ $('syllabusSummary').textContent=`${studiedCount} of ${totalCh} chapters marked studied · ${avg}% of the syllabus worked`;
+ $('syllabusLegend').innerHTML=T.blocks.map(b=>
+   `<span><b>${b.id}</b> ${b.subtitle} (${b.chapters.length})</span>`).join('');
+}
+function goBlock(id){let o=load('catQuantOpenV1',[]);if(!o.includes(id))o.push(id);
+ localStorage.setItem('catQuantOpenV1',JSON.stringify(o));nav('quant');}
 function sectionCard(date,s){
  const qs=dailyQuestions(date,s),a=attemptFor(date,s);
  return `<div class="section-card"><span class="badge">${qs[0]?.sourceType||'BANK'}</span><h4>${s}</h4><p>${qs[0]?.title||'No questions loaded'}<br>${sourceMix(qs)}</p><div class="row"><span class="pill ${a?'good':''}">${a?`Score ${a.score}/${a.maxScore}`:'Not attempted'}</span><button class="btn ${a?'ghost':'primary'}" onclick="window.CAT.startDaily('${date}','${s}')">${a?'Attempt again':'Start'}</button></div></div>`
 }
 function renderFocus(){
- const stats=topicStats(); const items=Object.values(stats).filter(x=>x.attempted>=2).sort((a,b)=>a.acc-b.acc).slice(0,5);
- $('focusList').innerHTML=items.length?items.map(x=>`<div class="focus-item"><strong>${x.topic}</strong><span>${x.acc}% · ${x.attempted} attempted</span></div>`).join(''):`<div class="muted">Complete a few tests and your weakest topics will appear here.</div>`;
+ const perf=chapterPerf(),names={};
+ QT().blocks.forEach(b=>b.chapters.forEach(c=>names[c.id]=c.name));
+ let items=Object.entries(perf).filter(([,v])=>v.att>=3)
+   .map(([k,v])=>({name:names[k]||k,acc:v.acc,att:v.att,id:k}))
+   .sort((a,b)=>a.acc-b.acc).slice(0,6);
+ if(!items.length){
+   const stats=topicStats();
+   items=Object.values(stats).filter(x=>x.attempted>=2).sort((a,b)=>a.acc-b.acc).slice(0,5)
+     .map(x=>({name:x.topic,acc:x.acc,att:x.attempted,id:null}));
+ }
+ $('focusList').innerHTML=items.length?items.map(x=>
+   `<div class="focus-item ${x.acc<60?'weak':''}"><strong>${x.name}</strong><span>${x.acc}% over ${x.att} questions</span></div>`).join('')
+   :`<div class="empty-state">Complete a few timed sections and your weakest chapters will appear here.</div>`;
 }
 
 function renderDaily(){
  $('dailyDate').textContent=pretty(state.selectedDate); const date=iso(state.selectedDate);
  $('dailyCards').innerHTML=`<div class="panel-title"><div><h3>${pretty(state.selectedDate)}</h3><p>Daily allocation</p></div></div>`+sections.map(s=>{
   const qs=dailyQuestions(date,s),a=attemptFor(date,s);
-  return `<div class="daily-row"><div class="daily-icon">${a?'✓':s[0]}</div><div><h4>${s} · ${qs[0]?.title||'No questions'}</h4><p>5 questions · 20 min · ${sourceMix(qs)}</p></div><button class="btn ${a?'ghost':'primary'}" onclick="window.CAT.startDaily('${date}','${s}')">${a?'Attempt again':'Start test'}</button></div>`
+  return `<div class="daily-row"><div class="daily-icon">${a?'✓':s[0]}</div><div><h4>${s} · ${qs[0]?.title||'No questions'}</h4><p>${qs.length} questions · 20 min · ${sourceMix(qs)}</p></div><button class="btn ${a?'ghost':'primary'}" onclick="window.CAT.startDaily('${date}','${s}')">${a?'Attempt again':'Start test'}</button></div>`
  }).join('');
  renderCalendar();
 }
@@ -262,17 +330,152 @@ const GEOMETRY_LESSONS=[
 ];
 function shuffled(a){let x=[...a];for(let i=x.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x}
 function renderRandom(){
- const all=bank(), pyq=all.filter(q=>q.sourceType==='PYQ').length, pr=all.filter(q=>q.sourceType!=='PYQ').length;
- $('bankBreakdown').innerHTML=`<div><strong>${all.length}</strong><span>Total questions</span></div><div><strong>${pyq}</strong><span>Real CAT PYQ</span></div><div><strong>${pr}</strong><span>Practice / original</span></div><div><strong>${all.filter(q=>q.section==='QA').length}</strong><span>QA</span></div><div><strong>${all.filter(q=>q.section==='DILR').length}</strong><span>DILR</span></div><div><strong>${all.filter(q=>q.section==='VARC').length}</strong><span>VARC</span></div>`;
- const c=Number($('randomCount').value),sec=$('randomSection').value,src=$('randomSource').value;let pool=all.filter(q=>(sec==='ALL'||q.section===sec)&&(src==='ALL'||(src==='PYQ'?q.sourceType==='PYQ':q.sourceType!=='PYQ')));
+ const all=bank();
+ const pyq=all.filter(q=>q.sourceType==='PYQ').length;
+ const pr=all.length-pyq;
+ const verified=all.filter(q=>q.verifiedAnswer).length;
+ const uniq=new Set(all.map(q=>((q.stimulus||'').slice(0,160)+'||'+q.question))).size;
+ $('bankBreakdown').innerHTML=
+  `<div><strong>${all.length}</strong><span>Questions in bank</span></div>`+
+  `<div><strong>${uniq}</strong><span>Distinct questions</span></div>`+
+  `<div><strong>${verified}</strong><span>Verified answers</span></div>`+
+  `<div><strong>${pyq}</strong><span>Real CAT PYQ</span></div>`+
+  `<div><strong>${pr}</strong><span>Practice / original</span></div>`+
+  `<div><strong>${all.filter(q=>q.section==='QA').length}</strong><span>QA</span></div>`+
+  `<div><strong>${all.filter(q=>q.section==='DILR').length}</strong><span>DILR</span></div>`+
+  `<div><strong>${all.filter(q=>q.section==='VARC').length}</strong><span>VARC</span></div>`;
+ renderIntegrity();
+ const c=Number($('randomCount').value),sec=$('randomSection').value,src=$('randomSource').value;
+ let pool=all.filter(q=>(sec==='ALL'||q.section===sec)&&(src==='ALL'||(src==='PYQ'?q.sourceType==='PYQ':q.sourceType!=='PYQ')));
  $('randomSummary').textContent=`${pool.length} questions available for this filter. ${Math.min(c,pool.length)} will be selected without duplicates.`;
 }
+function renderIntegrity(){
+ const host=$('integrityPanel'); if(!host)return;
+ if(!CFG.showIntegrityPanel){host.style.display='none';return}
+ const I=window.BANK_INTEGRITY;
+ const all=bank();
+ const unverified=all.filter(q=>!q.verifiedAnswer).length;
+ const keyOnly=all.filter(q=>q.explanationStatus==='KEY_ONLY').length;
+ const rows=[
+  ['Questions shipped', all.length, 'Every item below is answerable from what is stored with it.'],
+  ['Answers verified', all.length-unverified, 'Computed at build time, taken from a published answer key, or authored with a full worked explanation.'],
+  ['Answers not independently verified', unverified, 'Carried over from the earlier bank. Treat the answer as indicative, not authoritative.'],
+  ['Answer key only, no worked solution', keyOnly, 'The source PDF carried a key but no solution. No derivation has been invented to fill the gap.'],
+  ['Removed as unanswerable', I?I.totals.quarantined:0, 'Extracted records missing their passage, caselet or options. Kept in data/pyq-quarantine.json rather than shipped.'],
+  ['Duplicate copies removed', I?I.legacyDuplicatesRemoved:0, 'Identical question, passage and options repeated in the earlier practice bank.']
+ ];
+ const cyc=['QA','DILR','VARC'].map(s=>`${s}: ${cycleDays(s)} days`).join(' · ');
+ host.innerHTML=`<h3>Bank integrity</h3>`+
+  `<div class="integrity-rows">`+rows.map(r=>`<div class="integrity-row"><div class="iv">${r[1]}</div><div><b>${r[0]}</b><p>${r[2]}</p></div></div>`).join('')+`</div>`+
+  `<p class="muted">Non-repeating daily practice available from the current bank — ${cyc}. After that the rotation begins again.</p>`+
+  (CFG.includePYQ?'':`<p class="muted"><b>PYQ bank is switched off</b> in data/config.js, so only original practice is being served.</p>`);
+}
 function startRandom(){const c=Number($('randomCount').value),sec=$('randomSection').value,src=$('randomSource').value,tv=$('randomTime').value;let pool=bank().filter(q=>(sec==='ALL'||q.section===sec)&&(src==='ALL'||(src==='PYQ'?q.sourceType==='PYQ':q.sourceType!=='PYQ')));if(pool.length<c)return alert(`Only ${pool.length} questions match this filter. Reduce test size or broaden filters.`);let qs=shuffled(pool).slice(0,c);let seconds=tv==='auto'?Math.round(c*100):Number(tv)*60;startTest({date:iso(new Date()),section:sec==='ALL'?'MIXED':sec,questions:qs,mode:'random',label:`Random Test · ${c} questions`,seconds});}
+
+/* ===================== Quant Track ===================================== */
+const QT=()=>window.QUANT_TRACK||{blocks:[],counts:{},lod:{}};
+const QSTORE='catQuantStudiedV1';
+function studied(){return load(QSTORE,[])}
+function markStudied(id){let d=studied();d.includes(id)?d=d.filter(x=>x!==id):d.push(id);localStorage.setItem(QSTORE,JSON.stringify(d));renderQuant();renderDashboard();}
+function chapterQuestions(chId,lod){
+ return bank().filter(q=>q.chapter===chId&&(!lod||String(q.lod)===String(lod)));
+}
+// Accuracy per chapter, read back from completed attempts.
+function chapterPerf(){
+ const map={};bank().forEach(q=>{if(q.chapter)map[q.id]=q.chapter});
+ const out={};
+ progress.attempts.forEach(a=>(a.details||[]).forEach(d=>{
+   const ch=map[d.id];if(!ch)return;
+   if(d.answer===null||d.answer===undefined)return;
+   const o=out[ch]||(out[ch]={att:0,ok:0});o.att++;if(d.correct)o.ok++;
+ }));
+ Object.values(out).forEach(o=>o.acc=Math.round(100*o.ok/Math.max(1,o.att)));
+ return out;
+}
+function blockProgress(){
+ const st=studied(),perf=chapterPerf(),out={};
+ QT().blocks.forEach(b=>{
+   const total=b.chapters.length;
+   let score=0;
+   b.chapters.forEach(c=>{
+     let v=0;
+     if(st.includes(c.id))v=0.5;
+     const p=perf[c.id];
+     if(p&&p.att>=5)v=Math.max(v,0.5+0.5*Math.min(1,p.acc/85));
+     score+=v;
+   });
+   out[b.id]={pct:Math.round(100*score/Math.max(1,total)),chapters:total,
+              worked:b.chapters.filter(c=>st.includes(c.id)||(perf[c.id]&&perf[c.id].att)).length};
+ });
+ return out;
+}
+function renderQuant(){
+ const T=QT();if(!$('quantBlocks'))return;
+ if($('quantBookLine'))$('quantBookLine').textContent=
+   `Structured to follow ${T.book.author}, ${T.book.title}, ${T.book.edition}. Read the chapter in the book, then drill it here.`;
+ if($('quantNotice'))$('quantNotice').innerHTML=`<b>About this track:</b> ${T.book.note}`;
+ const lod=$('quantLod')?$('quantLod').value:'2';
+ const st=studied(),perf=chapterPerf(),bp=blockProgress(),open=load('catQuantOpenV1',[]);
+ $('quantBlocks').innerHTML=T.blocks.map(b=>{
+  const p=bp[b.id]||{pct:0};
+  const isOpen=open.includes(b.id);
+  const chapters=isOpen?b.chapters.map(c=>chapterHtml(c,st,perf,lod,open,b)).join(''):'';
+  return `<article class="block-card">
+    <div class="block-top" onclick="window.CAT.toggleBlock('${b.id}')">
+      <div><h3>${b.name} · ${b.subtitle}</h3><div class="sub">${b.chapters.length} chapters · ${b.ref}</div></div>
+      <div class="block-meter"><div class="track"><span style="width:${p.pct}%"></span></div><div class="pct">${p.pct}%</div></div>
+    </div>
+    ${isOpen?`<div class="block-why">${b.why}<div class="ref">Read this block at ${b.ref}.</div></div>`:''}
+    ${chapters}</article>`}).join('');
+}
+function chapterHtml(c,st,perf,lod,open,blk){
+ const counts=(QT().counts||{})[c.id]||{total:0,'1':0,'2':0,'3':0};
+ const p=perf[c.id];
+ const acc=p&&p.att?`<div class="chapter-stat ${p.acc<60?'weak':p.acc>=80?'strong':''}"><b>${p.acc}%</b><small>${p.att} attempted</small></div>`
+                   :`<div class="chapter-stat"><b>—</b><small>not attempted</small></div>`;
+ const isOpen=open.includes('c:'+c.id);
+ const lodBtn=n=>`<button class="lod-chip" ${counts[String(n)]?'':'disabled'} onclick="window.CAT.drill('${c.id}',${n})">
+    <b>LOD ${['','I','II','III'][n]}</b><small>${counts[String(n)]||0} questions</small></button>`;
+ const body=isOpen?`<div class="chapter-body">
+   <div class="teach">
+     <div><h5>What matters in this chapter</h5><ul>${c.concepts.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+     <div><h5>Where marks are lost</h5><ul class="trap">${c.traps.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+     <div class="drill"><b>Speed target.</b> ${c.drill}</div>
+   </div>
+   <div class="lod-row">${blk&&blk.drillOnly
+        ?`<button class="lod-chip" ${counts.total?'':'disabled'} onclick="window.CAT.drill('${c.id}',0)"><b>Start drill</b><small>${counts.total} items</small></button>`
+        :lodBtn(1)+lodBtn(2)+lodBtn(3)}
+     <button class="btn ghost" onclick="window.CAT.markStudied('${c.id}')">${st.includes(c.id)?'Mark as not studied':'Mark chapter studied'}</button>
+   </div></div>`:'';
+ return `<div class="chapter ${isOpen?'open':''}">
+   <div class="chapter-head">
+     <div class="chapter-no">${c.no}</div>
+     <div><h4 class="chapter-name">${c.name}${st.includes(c.id)?' ✓':''}</h4>
+          <div class="chapter-ref">${c.ref} — ${counts.total} ${blk&&blk.drillOnly?'drill items':'questions'}</div></div>
+     <div class="chapter-stats">${acc}</div>
+   </div>
+   <button class="chapter-toggle" onclick="window.CAT.toggleChapter('${c.id}')">${isOpen?'Hide chapter notes':'Open chapter notes and drills'}</button>
+   ${body}</div>`;
+}
+function toggleBlock(id){let o=load('catQuantOpenV1',[]);o.includes(id)?o=o.filter(x=>x!==id):o.push(id);
+ localStorage.setItem('catQuantOpenV1',JSON.stringify(o));renderQuant();}
+function toggleChapter(id){let o=load('catQuantOpenV1',[]);const k='c:'+id;
+ o.includes(k)?o=o.filter(x=>x!==k):o.push(k);
+ localStorage.setItem('catQuantOpenV1',JSON.stringify(o));renderQuant();}
+function drill(chId,lod){
+ const pool=chapterQuestions(chId,lod||null);
+ if(!pool.length)return alert('No questions at this level for this chapter yet.');
+ const n=Math.min(15,pool.length);
+ const name=(QT().blocks.flatMap(b=>b.chapters).find(c=>c.id===chId)||{}).name||chId;
+ startTest({date:iso(new Date()),section:'QA',questions:shuffled(pool).slice(0,n),mode:'chapter',
+            label:lod?`${name} — Level of Difficulty ${['','I','II','III'][lod]}`:`${name} — speed drill`,seconds:lod?n*100:n*25});
+}
+
 function renderGeometry(){const done=load('catGeometryDoneV1',[]);$('geometryProgress').textContent=Math.round(100*done.length/GEOMETRY_LESSONS.length)+'%';$('geometryModules').innerHTML=GEOMETRY_LESSONS.map((m,i)=>`<article class="lesson-card ${done.includes(i)?'done':''}"><div class="lesson-top"><span class="pill">Module ${i+1}</span><button class="icon-btn" onclick="window.CAT.toggleGeometry(${i})">${done.includes(i)?'✓':'Mark done'}</button></div><h3>${m.t}</h3><p>${m.k}</p><div class="formula-box">${m.f.map(x=>`<span>${x}</span>`).join('')}</div></article>`).join('');}
 function toggleGeometry(i){let done=load('catGeometryDoneV1',[]);if(done.includes(i))done=done.filter(x=>x!==i);else done.push(i);localStorage.setItem('catGeometryDoneV1',JSON.stringify(done));renderGeometry();}
 
-function paperQuestions(year,slot,section){return (window.PYQ_BANK||[]).filter(q=>q.year===Number(year)&&q.slot===Number(slot)&&q.section===section)}
-function paperCoverage(year){const qs=(window.PYQ_BANK||[]).filter(q=>q.year===year);return {count:qs.length,slots:[...new Set(qs.map(q=>q.slot))].sort(),sections:[...new Set(qs.map(q=>q.section))]}}
+function paperQuestions(year,slot,section){return pyqBank().filter(q=>q.year===Number(year)&&q.slot===Number(slot)&&q.section===section)}
+function paperCoverage(year){const qs=pyqBank().filter(q=>q.year===year);return {count:qs.length,slots:[...new Set(qs.map(q=>q.slot))].sort(),sections:[...new Set(qs.map(q=>q.section))]}}
 function renderPapers(){
  const years=Array.from({length:10},(_,i)=>2016+i); const current=$('paperYear')?.value||String(years.find(y=>paperCoverage(y).count)||2022);
  $('paperYear').innerHTML=years.map(y=>`<option value="${y}" ${String(y)===current?'selected':''}>CAT ${y}</option>`).join('');
@@ -372,7 +575,7 @@ function pick(i,j,el){state.answers[i]=j;document.querySelectorAll(`[data-q="${i
 function pickTita(i,v){if(String(v).trim()==='')delete state.answers[i];else state.answers[i]=v;updateProgress()}
 function submitTest(){
  if(!state.test)return;clearInterval(state.timer);let t=state.test,correct=0,answered=0,wrong=0,score=0;
- let details=t.questions.map((q,i)=>{let ans=state.answers[i],ok=isCorrectAnswer(q,ans);if(ans!==undefined&&ans!==null&&String(ans).trim()!==''){answered++;if(ok)correct++;else wrong++}score+=scoreQuestion(q,ans);const userText=q.type==='TITA'?(ans===undefined?null:ans):(ans===undefined?null:q.options[ans]);const correctText=q.type==='TITA'?(q.answerText??q.answer):(q.options[q.answer]??q.answerText??q.answer);return{id:q.id,section:q.section,topic:q.topic,question:q.question,answer:ans===undefined?null:ans,answerText:userText,correctAnswer:q.answer,correctText,correct:ok,explanation:q.explanation,howToThink:q.howToThink,sourceLabel:q.sourceLabel,difficulty:q.difficulty}});
+ let details=t.questions.map((q,i)=>{let ans=state.answers[i],ok=isCorrectAnswer(q,ans);if(ans!==undefined&&ans!==null&&String(ans).trim()!==''){answered++;if(ok)correct++;else wrong++}score+=scoreQuestion(q,ans);const userText=q.type==='TITA'?(ans===undefined?null:ans):(ans===undefined?null:q.options[ans]);const correctText=q.type==='TITA'?(q.answerText??q.answer):(q.options[q.answer]??q.answerText??q.answer);return{id:q.id,section:q.section,topic:q.topic,question:q.question,answer:ans===undefined?null:ans,answerText:userText,correctAnswer:q.answer,correctText,correct:ok,explanation:q.explanation,howToThink:q.howToThink,sourceLabel:q.sourceLabel,difficulty:q.difficulty,explanationStatus:q.explanationStatus,verifiedAnswer:q.verifiedAnswer}});
  let a={id:Date.now(),ts:Date.now(),date:t.date,section:t.section,mode:t.mode||'daily',score,maxScore:t.questions.length*3,correct,wrong,skipped:t.questions.length-answered,answered,timeSec:Math.min(t.seconds||1200,Math.round((Date.now()-state.startedAt)/1000)),sourceMix:sourceMix(t.questions),details};
  progress.attempts.push(a);save();renderResult(a);nav('result');
 }
@@ -381,17 +584,18 @@ function renderResult(a){
  $('scoreValue').textContent=a.score;$('scoreMax').textContent=`/ ${a.maxScore} marks`;$('scoreBar').style.width=Math.max(0,100*a.score/a.maxScore)+'%';$('scorePct').textContent=`${Math.round(100*a.score/a.maxScore)}% of maximum marks`;
  $('rCorrect').textContent=a.correct;$('rWrong').textContent=a.wrong;$('rSkipped').textContent=a.skipped;$('rAccuracy').textContent=(a.answered?Math.round(100*a.correct/a.answered):0)+'%';$('rTime').textContent=Math.round(a.timeSec/60)+' min';
  let prev=progress.attempts.filter(x=>x.section===a.section&&x.id!==a.id).slice(-10),avg=prev.length?prev.reduce((s,x)=>s+x.score,0)/prev.length:null;$('rVsAvg').textContent=avg===null?'—':`${a.score-avg>=0?'+':''}${(a.score-avg).toFixed(1)}`;
- $('reviewArea').innerHTML=a.details.map((d,i)=>`<div class="review-card"><span class="pill ${d.correct?'good':'bad'}">${d.correct?'Correct':d.answer==null?'Skipped':'Wrong'}</span><h4>Q${i+1}. ${d.question}</h4><div class="review-answer">Your answer: <span class="${d.correct?'correct-option':'wrong-option'}">${d.answerText||'Skipped'}</span></div><div class="review-answer">Correct answer: <span class="correct-option">${d.correctText}</span></div><div class="review-explain"><b>Explanation</b><br>${d.explanation}</div><div class="review-explain thinking"><b>How to think</b><br>${d.howToThink}</div><div class="review-answer">Source: ${d.sourceLabel}</div></div>`).join('');
+ $('reviewArea').innerHTML=a.details.map((d,i)=>`<div class="review-card"><span class="pill ${d.correct?'good':'bad'}">${d.correct?'Correct':d.answer==null?'Skipped':'Wrong'}</span><h4>Q${i+1}. ${d.question}</h4><div class="review-answer">Your answer: <span class="${d.correct?'correct-option':'wrong-option'}">${d.answerText||'Skipped'}</span></div><div class="review-answer">Correct answer: <span class="correct-option">${d.correctText}</span></div><div class="review-explain"><b>Explanation</b>${d.explanationStatus==='KEY_ONLY'?' <span class="pill warn">answer key only</span>':''}<br>${d.explanation}</div>${d.verifiedAnswer===false?'<div class="review-answer warnline">This answer was carried over from the earlier bank and has not been independently verified.</div>':''}<div class="review-explain thinking"><b>How to think</b><br>${d.howToThink}</div><div class="review-answer">Source: ${d.sourceLabel}</div></div>`).join('');
 }
 $('testSubmit').onclick=submitTest;$('testExit').onclick=()=>{clearInterval(state.timer);nav('daily')};$('printResult').onclick=()=>window.print();$('retryTest').onclick=()=>{if(state.test)startTest(state.test)};
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(progress,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cat-mastery-progress.json';a.click();URL.revokeObjectURL(a.href)}
 $('progressImport').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.attempts))throw new Error('Invalid progress file');progress.attempts=x.attempts;save();renderDashboard();alert('Progress imported.')}catch(err){alert(err.message)}};r.readAsText(f)}
 
+if($('quantLod'))$('quantLod').onchange=renderQuant;
 if($('randomStart'))$('randomStart').onclick=startRandom;['randomCount','randomSection','randomSource'].forEach(id=>{const el=$(id);if(el)el.onchange=renderRandom});if($('geometryPractice'))$('geometryPractice').onclick=()=>{let qs=shuffled(bank().filter(q=>q.section==='QA'&&normalTopic(q.topic).includes('geometry'))).slice(0,25);startTest({date:iso(new Date()),section:'QA',questions:qs,mode:'geometry',label:'Geometry Practice · 25 questions',seconds:2500});};
 
 ['intelExam','intelSection','intelYear','intelSort'].forEach(id=>{const el=$(id); if(el) el.onchange=renderIntelligence;});
 
-window.CAT={toggleGeometry,pickTita,startSelectedPaper,startDaily:(date,section)=>startTest({date,section,questions:dailyQuestions(date,section),mode:'daily',label:`Daily ${section}`}),
+window.CAT={toggleGeometry,toggleBlock,toggleChapter,drill,markStudied,goBlock,pickTita,startSelectedPaper,startDaily:(date,section)=>startTest({date,section,questions:dailyQuestions(date,section),mode:'daily',label:`Daily ${section}`}),
 practiceTopic:(section,topic)=>{let qs=sectionPool(section).filter(q=>normalizeTopicName(q.topic)===normalizeTopicName(topic)).slice(0,5);if(!qs.length){alert('No publishable questions for this topic are bundled yet. Import a question bank or use Topic Practice after adding questions.');return;}startTest({date:iso(new Date()),section,questions:qs,mode:'topic',label:`${section} · ${topic}`})},
 pick,selectDate:ds=>{let [y,m,d]=ds.split('-').map(Number);state.selectedDate=new Date(y,m-1,d);renderDaily()}};
 $('todayLabel').textContent=' · '+pretty(new Date()); state.selectedDate=new Date();state.calDate=new Date(); renderDashboard(); renderTopics();
